@@ -1,0 +1,341 @@
+---
+title: "&nbsp;"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<center><h1>Statistics and Data Visualizations in Climate Science</h1></center>
+<center><h1>with R and Python</h1></center>
+<p>&nbsp;</p>
+<center><h3>A Cambridge University Press book By</h3></center>
+<center><h3>SSP Shen and GR North</h3></center>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<div align="center">Version 1.0 released in July 2023 and coded by Dr. Samuel Shen, Distinguished Professor</div>
+<div align="center">San Diego State University, California, USA</div> 
+<div align="center"><https://shen.sdsu.edu></div> 
+<div align="center">Email: <sshen@sdsu.edu></div> 
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+## Chapter 2: Elementary Probability and Statistics
+
+### R Plot Fig. 2.1
+```{r}
+# Go to your working directory
+# setwd("/Users/sshen/climstats") 
+nycDat=read.csv("data/NYCDailyDatasummer2019.csv", header=T)
+dim(nycDat)
+#[1] 7555   13
+dayNum=92
+nycP=nycDat[1:dayNum, c(3,6)]
+
+dw=c()
+for (i in 1:dayNum){if (nycP[i,2] >= 0.2){dw[i] = 1} 
+  else {dw[i]=0} }
+dw
+n0=which(dw==0)
+n1=which(dw==1)
+m=dayNum - 1
+par(mfrow=c(1,1))
+par(mar=c(2.5,4.5,2.5,4))
+plot(1:dayNum, nycP[,2], type="s",
+     main="Daily Precipitation of New York City: 
+      1 Jun 2019- 31 Aug 2019",
+     ylab="Precipitation [mm/day]", 
+     xaxt="n", xlab="",
+     cex.lab=1.4, cex.axis=1.4)
+axis(1, at=c(1, 30, 61, 92), 
+     labels=c("1 June", "1 July", "1 Aug", "31 Aug"),
+     cex.axis=1.4)
+par(new=TRUE)
+plot(n0+1.0, dw[n0]-0.2, cex.lab=1.4,
+     ylim=c(0,15), pch=15, cex=0.4, col="red",
+     axes=FALSE, xlab="", ylab="")
+points(n1+1, dw[n1], pch=15, col="blue", cex=0.4)
+axis(4, col="blue", col.axis="blue", 
+     at=c(0,1), labels =c("D", "W"), 
+     las=2, cex.axis=1)
+mtext("Dry or Wet Days", 
+      col="blue", side=4, line=1.5, cex=1.4)
+
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 2.2
+```{r}
+p=0.6471
+n=1:12
+pdfn= (1-p)*p^n
+par(mar=c(4.5,4.5,3,0.5))
+plot(n, pdfn, 
+     ylim=c(0,0.25), type="h", lwd=15,
+     cex.lab=1.5, cex.axis=1.5,
+     xlab="Length of Dry Spell: n", ylab="Probability",
+     main="Probability Distribution Function of Dry Spell")
+text(1.5,0.25, "(a)",cex=1.5)
+
+p=0.6471
+N=1:12
+cdfN= 1-p^N
+par(mar=c(4.5,4.5,3,0.5))
+plot(N, cdfN, 
+     ylim=c(0,1), type="s", lwd=3,
+     cex.lab=1.5, cex.axis=1.5,
+     xlab="N: Dry Spell Not Longer Than N Days", 
+     ylab="Cumulative Probability",
+     main="Cumulative Distribution Function of Dry Spell")
+text(1.5,0.95, "(b)",cex=1.5)
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 2.3
+```{r}
+n=20
+x=0:n
+pdfdx=dbinom(x, size=n, prob=0.3)
+par(mar=c(4.5,4.5,2,4.5))
+plot(x, pdfdx, type="h", lty=1, lwd=3,
+     xlab="Number of successes: k", ylab="Probability", 
+     main="Binomial Distribution: n=20, p=0.3",
+     cex.lab=1.4, cex.axis=1.4)
+text(11, 0.05, "PDF", cex=2)
+par(new=TRUE)
+cdfx=pbinom(x, size=n, prob=0.3)
+plot(x, cdfx, col="blue",
+     type="o", lty=2, axes=FALSE,
+     xlab="", ylab="", cex.axis=1.4)
+axis(4, col="blue", col.axis = "blue", cex.axis=1.4)
+mtext("Cumulative Probability", col="blue",
+      side=4, line=3, cex=1.4)
+text(11, 0.9, "CDF", cex=2, col="blue")
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 2.3: Save as an eps file
+```{r}
+#setwd("/Users/sshen/climstats")
+#setEPS() # save the .eps figure file to the working directory
+#postscript("fig0203.eps", width = 7, height = 5)
+n=20
+x=0:n
+pdfdx=dbinom(x, size=n, prob=0.3)
+par(mar=c(4.5,4.5,2,4.5))
+plot(x, pdfdx, type="h", lty=1, lwd=3,
+     xlab="Number of successes: k", ylab="Probability", 
+     main="Binomial Distribution: n=20, p=0.3",
+     cex.lab=1.4, cex.axis=1.4)
+text(11, 0.05, "PDF", cex=2)
+par(new=TRUE)
+cdfx=pbinom(x, size=n, prob=0.3)
+plot(x, cdfx, col="blue",
+     type="o", lty=2, axes=FALSE,
+     xlab="", ylab="", cex.axis=1.4)
+axis(4, col="blue", col.axis = "blue", cex.axis=1.4)
+mtext("Cumulative Probability", col="blue",
+      side=4, line=3, cex=1.4)
+text(11, 0.9, "CDF", cex=2, col="blue")
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 2.4
+```{r}
+x=seq(-5,5, len=101)
+y=dnorm(x)
+plot(x, y, 
+     type="l", lty=1, 
+     xlab="x", ylab="Probability Density f(x)", 
+     main="Standard Normal Distribution",
+     cex.lab=1.4, cex.axis=1.4)
+lines(x,rep(0, 101))
+xx=c(x[60], x[60], x[70], x[70])
+yy=c(0, y[60], y[70], 0)
+polygon(xx, yy, col="brown") 
+text(0.7, 0.01, "a", col="brown")
+text(2.1, 0.01, "b", col="brown")
+text(1.7,0.2, expression(f(x)), cex=1.4)
+par(new=TRUE)
+plot(x, pnorm(x), type="l", lty=2, col="blue",
+     axes=FALSE, ylab="", xlab="", cex.axis=1.4)
+axis(4, col="blue", col.axis = "blue", cex.axis=1.4)
+text(3,0.9, expression(F(x)), cex=1.4, col="blue")
+mtext("Cumulative Probability F(x)", col="blue",
+      side=4, line=3, cex=1.4)
+text(3.3,0.3, cex=1.3, col="brown",
+     expression(P[ab]==integral(f(x)*dx, a,b)))
+```
+
+
+<p>&nbsp;</p>
+### R plot Fig. 2.5: 2023 version
+```{r}
+par(mar=c(4.5, 4.5, 2.5, 4.5))
+x<- rnorm(200, mean=5, sd=3)
+h<-hist(x, breaks=15, col="gray", 
+        xlim=c(-5,15), ylim=c(0,30),
+        xlab=expression("Random numbers x of N(5," * 3^2 *")"),
+        ylab="Frequency",
+        main="Histogram and Its Normal PDF Fit", 
+        cex.lab=1.4, cex.axis=1.4)
+xfit<-seq(min(x),max(x),length=40)
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x))
+#yfit <- yfit*diff(h$mids[1:2])*length(x)
+yfit <- yfit
+#diff(h$mids[1:2])*length(x) =200 
+#is the total histogram area
+points(x, rep(0, 200), cex=0.8, pch=3, col="blue")
+par(new = TRUE)
+plot(xfit, yfit, type = 'l', lwd = 3, axes = FALSE,
+     xlab = "", ylab = "", col = 'red')
+axis(4, col='red', col.axis="red", cex.axis =1.4)
+mtext("Density", side =4, line = 3, cex = 1.4,
+      col = 'red')
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 2.5: The book version
+```{r}
+par(mar=c(4.5, 4.5, 2.5, 0.5))
+x<- rnorm(200, mean=5, sd=3)
+h<-hist(x, breaks=15, col="gray", 
+        xlim=c(-5,15), ylim=c(0,30),
+        xlab=expression("Random numbers x of N(5," * 3^2 *")"),
+        ylab="Frequency/Density",
+        main="Histogram and Its Normal Curve Fit", 
+        cex.lab=1.4, cex.axis=1.4)
+xfit<-seq(min(x),max(x),length=40)
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+#diff(h$mids[1:2])*length(x) =200 
+#is the total histogram area
+points(x, rep(0, 200), cex=0.8, pch=3, col="blue")
+lines(xfit, yfit,  lwd=2)
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 2.6
+```{r}
+#install.packages("ggExtra") 
+library(ggplot2)
+df <- data.frame(x = rnorm(1000, 5, 3), y = runif(1000, 0, 5))
+p <- ggplot(df, aes(x, y)) + geom_point() + theme_classic()
+ggExtra::ggMarginal(p, type = "histogram")
+
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 2.7: R code for Poisson Distribution
+```{r}
+k = 0:20
+y = dpois(k, lambda = 5)
+par(mar=c(4.5,4.5,2,4.5))
+plot(k, y, 
+     type="p", lty=1, xlab="k", ylab="", 
+     main="Poisson Distribution: Mean Rate = 5",
+     cex.lab=1.4, cex.axis=1.4)
+mtext(side=2, line=3, cex=1.4, 'Probability f(k)')
+par(new=TRUE)
+plot(k, ppois(k, lambda = 5), type="p", pch=16, 
+     lty=2, col="blue",
+     axes=FALSE, ylab="", xlab="", cex.axis=1.4)
+axis(4, col="blue", col.axis = "blue", cex.axis=1.4)
+mtext("Cumulative Probability F(k)", col="blue",
+      side=4, line=3, cex=1.4)
+
+##
+dpois(10, lambda=5)
+```
+
+<p>&nbsp;</p>
+### Plot Fig. 2.8: R code
+```{r}
+x=seq(0,20, len=201)
+ycauchy=dcauchy(x, location = 10, scale=1)
+ygauss=dnorm(x, mean=10, sd=sqrt(pi/2))
+plot(x, ycauchy, type="l", lwd=2, 
+     ylab="Density", 
+     main="Comparison between Cauchy and Gaussian Distributions",
+     cex.lab=1.4, cex.axis=1.4)
+legend(-1,0.35, legend="Cauchy distribution", 
+       cex=1.2, bty="n", lty=1, lwd=2)
+lines(x, ygauss, lty=2)
+legend(-1,0.32, legend="Normal distribution", 
+       cex=1.2, bty="n", lty=2)
+
+
+##
+x= seq(1,10, by=0.2)
+plot(x,dchisq(x, df = 4))
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 2.9: R code
+```{r}
+#setwd("/Users/sshen/climstats")
+da1 =read.csv("data/EdmontonT.csv", header=TRUE)
+x=da1[,3]
+m1 = mean(x)
+s1 = sd(x)
+xa = (x- m1)/s1
+y = matrix(xa[1:1632], ncol=6, byrow=TRUE)
+w = rowSums(y^2)
+hist(w, breaks= seq(0,40,by=1),
+     xlim=c(0,40), ylim=c(0,50),
+     main="Histogram and its Chi-square Fit
+for Edmonton temperature data", 
+     xlab=expression("Chi-square data ["~degree~C~"]"^2),
+     cex.lab=1.4, cex.axis=1.4)
+par(new=TRUE)
+density = function(x) dchisq(x, df=6)
+x=seq(0,40, by=0.1)
+plot(x, density(x), type="l", lwd=3,
+     col="blue", ylim=c(0,0.15),
+     axes=FALSE, bty="n", xlab="", ylab="")
+axis(4, cex.axis=1.4, col='blue', col.axis='blue')
+mtext("Chi-square Density", cex=1.4,
+      side = 4, line = 3, col="blue")
+text(20, 0.1, cex=1.4, col="blue",
+     "Chi-square distribution: df=6")
+```
+
+
+<p>&nbsp;</p>
+### Lognormal Distribution of the June Madison Precipitation
+```{r}
+#setwd("/Users/sshen/climstats")
+Madison = read.csv("data/MadisonP.csv", header=TRUE)
+Madison[1:2,]#Take a look at the first two lines of the data
+daP = matrix(Madison[,7], ncol=12, byrow=TRUE)
+x = daP[,6] #The June precipitation data
+n=length(x)
+m1=mean(x)
+A = log(m1)- sum(log(x))/n
+c = (1/(4*A))*(1 + sqrt(1 + 4*A/3))
+beta = c/m1
+mu=mean(log(x))
+sig = sd(log(x))
+round(c(mu, sig), digits = 2)
+#[1] 4.52 0.65
+modelmean = exp(mu + 0.5*sig^2)
+modelsd = sqrt((exp(sig^2)-1)*exp(2*mu + sig^2))
+datamean = mean(x)
+datasd = sd(x)
+round(c(modelmean, datamean, modelsd, datasd), digits =2)
+#[1] 112.81 109.79  81.26  63.94
+```
+

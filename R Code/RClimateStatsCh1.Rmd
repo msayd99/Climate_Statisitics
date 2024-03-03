@@ -1,0 +1,371 @@
+---
+title: "&nbsp;"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<center><h1>Statistics and Data Visualizations in Climate Science</h1></center>
+<center><h1>with R and Python</h1></center>
+<p>&nbsp;</p>
+<center><h3>A Cambridge University Press book By</h3></center>
+<center><h3>SSP Shen and GR North</h3></center>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<div align="center">Version 1.0 released in July 2023 and coded by Dr. Samuel Shen, Distinguished Professor</div>
+<div align="center">San Diego State University, California, USA</div> 
+<div align="center"><https://shen.sdsu.edu></div> 
+<div align="center">Email: <sshen@sdsu.edu></div> 
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+## Chapter 1: Basics of Climate Data Arrays, Statistics, and Visualization
+
+### R Plot Fig. 1.1: Simple Line Graph
+```{r}
+# go to your working directory
+#setwd("/Users/sshen/climstats") 
+# read the data file from the folder named "data"
+NOAAtemp = read.table(
+  "data/aravg.ann.land_ocean.90S.90N.v4.0.1.201907.txt",
+  header=FALSE) #Read from the data folder
+# check the data matrix dimension
+dim(NOAAtemp)
+#[1] 140   6 
+#140 years from 1880 to 2019
+#2019 will be excluded since data only up to July 2019
+#col1 is year, col2 is anomalies, col3-6 are data errors
+# set the plot margins and the positions of labels
+par(mar=c(3.5,3.5,2.5,1), mgp=c(2,0.8,0))
+plot(NOAAtemp[1:139,1], NOAAtemp[1:139,2],
+     type ="o", col="brown", lwd=3,
+     main ="Global Land-Ocean Average Annual Mean 
+     Surface Temperature Anomalies: 1880-2018",
+     cex.lab=1.2,cex.axis=1.2,
+     xlab="Year", 
+     ylab=expression(
+       paste("Temperature Anomaly [", degree,"C]"))
+)
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 1.2: Staircase Chart of Data
+```{r}
+plot(NOAAtemp[1:139,1], NOAAtemp[1:139,2],
+     type="s", #staircase curve for data
+     col="black", lwd=2,
+     main="Global Land-Ocean Average Annual Mean 
+     Surface Temperature Anomalies: 1880-2018",
+     cex.lab=1.2,cex.axis=1.2,
+     xlab="year",
+     ylab=expression(paste(
+       "Temperature Anomaly [", degree,"C]"))
+)
+```
+
+<p>&nbsp;</p>
+### R Plot Fig. 1.3: Color Bar Chart of Data
+```{r}
+x <- NOAAtemp[,1]
+y <- NOAAtemp[,2]
+z <- rep(-99, length(x))
+# compute 5-point moving average
+for (i in 3:length(x)-2) z[i] = 
+  mean(c(y[i-2],y[i-1],y[i],y[i+1],y[i+2]))
+n1 <- which(y>=0); x1 <- x[n1]; y1 <- y[n1]
+n2 <- which(y<0); x2 <- x[n2]; y2 <- y[n2]
+x3 <- x[2:length(x)-2]
+y3 <- z[2:length(x)-2]
+plot(x1, y1, type="h", #bars for data
+     xlim = c(1880,2016), lwd=3, 
+     tck = 0.02,  #tck>0 makes ticks inside the plot
+     ylim = c(-0.7,0.7), xlab="Year", col="red",
+     ylab = expression(paste(
+       "Temperature Anomaly [", degree,"C]")),
+     main ="Global Land-Ocean Average Annual Mean 
+     Surface Temperature Anomalies: 1880-2018",
+     cex.lab = 1.2, cex.axis = 1.2)
+lines(x2, y2, type="h",
+      lwd = 3, tck = -0.02, col = "blue")
+lines(x3, y3, lwd = 2)
+```
+
+<p>&nbsp;</p>
+### R Code for Computing Statistical Indices
+```{r}
+#setwd("/Users/sshen/climstats")
+NOAAtemp = read.table(
+  "data/aravg.ann.land_ocean.90S.90N.v4.0.1.201907.txt",
+  header=FALSE)
+temp2018=NOAAtemp[1:139,2] #use the temp data up to 2018
+head(temp2018) #show the first six values
+#[1] -0.370221 -0.319993 -0.320088 -0.396044 -0.458355 -0.470374
+mean(temp2018) #mean
+#[1] -0.1858632
+sd(temp2018) #standard deviation
+#[1] 0.324757
+var(temp2018) #variance
+#[1] 0.1054671
+library(e1071) 
+#This R library is needed to compute the following parameters
+#install.packages("e1071") #if it is not in your computer
+skewness(temp2018) 
+#[1] 0.7742704
+kurtosis(temp2018)
+#[1] -0.2619131
+median(temp2018)
+#[1] -0.274434
+quantile(temp2018,probs= c(0.05, 0.25, 0.75, 0.95))
+#       5%        25%        75%        95% 
+#  -0.5764861 -0.4119770  0.0155245  0.4132383 
+
+```
+
+<p>&nbsp;</p>
+### R Plot Fig. 1.4. Histogram and Fit
+```{r}
+par(mar=c(3.5,3.5,2.5,1), mgp=c(2,0.8,0))
+h <- hist(NOAAtemp[1:139, 2], 
+         main="Histogram of 1880-2018 Temperature Anomalies",
+         xlab=expression(paste(
+           "Temperature anomalies [", degree, "C]")), 
+         xlim=c(-1,1), ylim=c(0,30),
+         breaks=10, cex.lab=1.2, cex.axis=1.2) 
+xfit <- seq(-1, 1, length=100)
+areat <- sum((h$counts)*diff(h$breaks[1:2]))#Normalization area
+yfit <- areat*dnorm(xfit, 
+                    mean=mean(NOAAtemp[1:139,2]), 
+                    sd=sd(NOAAtemp[1:139,2]))
+#Plot the normal fit on the histogram
+lines(xfit, yfit, col="blue", lwd=3) 
+
+```
+
+<p>&nbsp;</p>
+### R Plot Fig. 1.5: Box plot
+```{r}
+boxplot(NOAAtemp[1:139, 2], ylim = c(-0.8, 0.8), 
+        ylab=expression(paste(
+          "Temperature anomalies [", degree, "C]")),
+        width=NULL, cex.lab=1.2, cex.axis=1.2)
+```
+
+<p>&nbsp;</p>
+### R Plot Fig. 1.6: Q-Q plot for the Standardized Global Average Annual Mean Temperature Anomalies
+```{r}
+temp2018 <- NOAAtemp[1:139,2]
+tstand <- (temp2018 - mean(temp2018))/sd(temp2018)
+set.seed(101)
+qn <- rnorm(139) #simulate 139 points by N(0,1)
+qns <- sort(qn) # sort the points
+qq2 <- qqnorm(qns,col="blue",lwd = 2)
+
+#setEPS() #Automatically saves the .eps file
+#postscript("fig0106.eps", height=7, width=7)
+par(mar = c(4.5,5,2.5,1), xaxs = "i", yaxs = "i")
+qt = qqnorm(tstand, 
+  main = "Q-Q plot for the Standardized Global Average 
+  Annual Mean Temperature Anomalies vs N(0,1)", 
+   ylab="Quantile of Temperature Anomalies", 
+   xlab="Quantile of N(0,1)", 
+  xlim=c(-3,3), ylim = c(-3,3),
+          cex.lab = 1.3, cex.axis = 1.3)
+qqline(tstand, col = "red", lwd=3)
+points(qq2$x, qq2$y, pch = 19, 
+       col ="purple")
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 1.7: Data Line Graph with Linear Trend Line
+```{r}
+par(mar=c(3.5,3.5,2.5,1), mgp=c(2,0.8,0))
+plot(NOAAtemp[1:139,1], NOAAtemp[1:139,2],
+     type="l", col="brown", lwd=3,
+     main=" Global Land-Ocean Average Annual Mean 
+Surface Temperature Anomalies: 1880-2018",
+     cex.lab=1.2,cex.axis=1.2,
+     xlab="Year", 
+     ylab=expression(paste(
+       "Temperature Anomaly [", degree,"C]"))
+)
+abline(lm(NOAAtemp[1:139,2] ~ NOAAtemp[1:139,1]),
+       lwd=3, col="blue")
+lm(NOAAtemp[1:139,2] ~ NOAAtemp[1:139,1])
+#       (Intercept)  NOAAtemp[1:139, 1]  
+#-13.872921            0.007023 
+#Trend 0.7023 degC/100a
+text(1930, 0.5, 
+     expression(paste("Linear trend: 0.7023",
+                      degree,"C/100a")),
+     cex = 1.5, col="blue")
+
+```
+
+<p>&nbsp;</p>
+### Read the netCDF data: NOAAGlobalTemp 
+```{r}
+#setwd("/Users/sshen/climstats")  
+#install.packages("ncdf4")
+library(ncdf4)
+nc = ncdf4::nc_open("data/air.mon.anom.nc")
+nc # describes details of the dataset
+Lat <- ncvar_get(nc, "lat")
+Lat # latitude data
+#[1] -87.5 -82.5 -77.5 -72.5 -67.5 -62.5
+Lon <- ncvar_get(nc, "lon")
+Lon # longitude data
+#[1]   2.5   7.5  12.5  17.5  22.5  27.5 
+Time<- ncvar_get(nc, "time")
+head(Time) # time data in Julian days
+#[1] 29219 29250 29279 29310 29340 29371
+library(chron) # convert Julian date to calendar date
+nc$dim$time$units # .nc base time for conversion
+#[1] "days since 1800-1-1 00:00:0.0"
+month.day.year(29219,c(month = 1, day = 1, year = 1800))
+#1880-01-01 # the beginning time of the dataset
+tail(Time)
+#[1] 79988 80019 80047 80078 80108 80139
+month.day.year(80139,c(month = 1, day = 1, year = 1800))
+#2019-06-01 # the end time of the dataset
+
+# extract anomaly data in (lon, lat, time) coordinates
+NOAAgridT <- ncvar_get(nc, "air") 
+dim(NOAAgridT) # dimensions of the data array
+#[1]  72   36 1674 #5-by-5, 1674 months from Jan 1880-Jun 2019
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 1.8: Dec 2015 Global Surface Temp Anomalies Map
+```{r}
+library(maps)# requires maps package 
+mapmat=NOAAgridT[,,1632]
+# Julian date time 1632 corresponds to Dec 2015
+mapmat=pmax(pmin(mapmat,6),-6) # put values in [-6, 6]
+int=seq(-6, 6, length.out=81)
+rgb.palette=colorRampPalette(c('black','blue', 
+   'darkgreen', 'green', 'yellow','pink','red','maroon'),
+                             interpolate='spline')
+par(mar=c(3.5, 4, 2.5, 1), mgp=c(2.3, 0.8, 0))
+filled.contour(Lon, Lat, mapmat, 
+               color.palette=rgb.palette, levels=int,
+  plot.title=title(main="NOAAGlobalTemp Anomalies: Dec 2015",
+            xlab="Latitude", ylab="Longitude", cex.lab=1.2),
+  plot.axes={axis(1, cex.axis=1.2, las=1); 
+                          axis(2, cex.axis=1.2, las=2);
+                          map('world2', add=TRUE); grid()},
+  key.title=title(main=expression(paste("[", degree, "C]"))),
+  key.axes={axis(4, cex.axis=1.2)})
+
+```
+
+
+<p>&nbsp;</p>
+### Fig. 1.9 is Plotted by Panoply
+```{r}
+
+```
+
+<p>&nbsp;</p>
+### R plot Fig. 1.10: Hovmoller diagram
+```{r}
+library(maps)
+mapmat=NOAAgridT[30,12:24,1309:1668]
+#Longitude= 240 deg, Lat =[-30 30] deg
+#Time=Jan 1989-Dec 2018: 30 years
+mapmat=pmax(pmin(mapmat,2),-2) # put values in [-2,2]
+par(mar=c(4,5,3,0))
+int=seq(-2,2,length.out=81)
+rgb.palette=colorRampPalette(c('black','blue', 
+ 'darkgreen','green', 'yellow','pink','red','maroon'),
+                             interpolate='spline')
+par(mar=c(3.5,3.5,2.5,1), mgp=c(2.4, 0.8, 0))
+x = seq(1989, 2018, len=360)
+y = seq(-30, 30, by=5)
+filled.contour(x, y, t(mapmat), 
+       color.palette=rgb.palette, levels=int,
+       plot.title=title(main=
+    "Hovmoller diagram of the NOAAGlobalTemp Anomalies",
+               xlab="Time",ylab="Latitude", cex.lab=1.2),
+      plot.axes={axis(1, cex.axis=1.2); 
+                 axis(2, cex.axis=1.2); 
+                 map('world2', add=TRUE);grid()},
+        key.title=title(main = 
+                expression(paste("[", degree, "C]"))),
+        key.axes={axis(4, cex.axis=1.2)})
+```
+
+<p>&nbsp;</p>
+### R Read 4-Dimensional netCDF File
+```{r}
+#setwd("/Users/sshen/climstats")
+library(ncdf4)
+# read GODAS data 1-by-1 deg, 40 levels, Jan-Dec 2015
+nc=ncdf4::nc_open("data/godas2015.nc")
+nc
+Lat <- ncvar_get(nc, "lat")
+Lon <- ncvar_get(nc, "lon")
+Level <- ncvar_get(nc, "level")
+Time <- ncvar_get(nc, "time")
+head(Time)
+#[1] 78527 78558 78586 78617 78647 78678
+library(chron)
+month.day.year(78527,c(month = 1, day = 1, year = 1800))
+# 2015-01-01
+# potential temperature pottmp[lon, lat, level, time] 
+godasT <- ncvar_get(nc, "pottmp")
+dim(godasT)
+#[1] 360 418  40  12, 
+#i.e., 360 lon, 418 lat, 40 levels, 12 months=2015
+t(godasT[246:250, 209:210, 2, 12]) 
+#Dec level 2 (15-meter depth) water temperature [K] of
+#a few grid boxes over the eastern tropical Pacific
+#        [,1]     [,2]     [,3]     [,4]     [,5]
+#[1,] 300.0655 299.9831 299.8793 299.7771 299.6641
+#[2,] 300.1845 300.1006 299.9998 299.9007 299.8045
+
+```
+
+
+<p>&nbsp;</p>
+### R plot Fig. 1.11
+```{r}
+#The ocean potential temperature the 20th layer from surface: 
+#195 meters depth compute 2015 annual mean temperature at 20th layer
+library(maps)
+climmat=matrix(0,nrow=360,ncol=418)
+sdmat=matrix(0,nrow=360,ncol=418)
+Jmon<-1:12
+for (i in 1:360){
+  for (j in 1:418){
+    climmat[i,j] = mean(godasT[i,j,20,Jmon]); 
+    sdmat[i,j]=sd(godasT[i,j,20,Jmon]) 
+                  }
+                }
+int=seq(273,298,length.out=81)
+rgb.palette=colorRampPalette(c('black','blue',
+    'darkgreen','green', 'white','yellow',
+    'pink','red','maroon'), interpolate='spline')
+#setwd("/Users/sshen/climstats")
+#setEPS() # save the .eps figure file 
+#postscript("fig0111.eps", height = 5, width = 10)
+par(mar=c(3.5, 3.5, 2.5, 0), mgp=c(2, 0.8, 0))
+filled.contour(Lon, Lat, climmat, 
+     color.palette=rgb.palette, levels=int,
+    plot.title=title(main=
+"GODAS 2015 Annual Mean Temperature at 195 [m] Depth Level",
+            xlab="Longitude",ylab="Latitude",
+            cex.lab=1.3, cex.axis=1.3),
+plot.axes={axis(1); axis(2); map('world2', add=TRUE);grid()},
+            key.title=title(main="[K]"))
+#dev.off()
+```
+

@@ -1,0 +1,493 @@
+---
+title: "&nbsp;"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<center><h1>Statistics and Data Visualizations in Climate Science</h1></center>
+<center><h1>with R and Python</h1></center>
+<p>&nbsp;</p>
+<center><h3>A Cambridge University Press Book by</h3></center>
+<center><h3>SSP Shen and GR North</h3></center>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<div align="center">Version 1.0 released in July 2023 and coded by Dr. Samuel Shen, Distinguished Professor</div>
+<div align="center">San Diego State University, California, USA</div> 
+<div align="center"><https://shen.sdsu.edu></div> 
+<div align="center">Email: <sshen@sdsu.edu></div> 
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+## Chapter 7: Introduction to Time Series 
+
+### R Code for Fig. 7.1: Mauna Loa CO2 March 1958-July 2020
+```{r}
+#setwd("/Users/sshen/climstats")
+co2m = read.table("data/co2m.txt", header = TRUE)
+dim(co2m)
+# [1] 749   7
+co2m[1:3,]
+#year mon     date average interpolated  trend days
+#1 1958   3 1958.208  315.71       315.71 314.62   -1
+#2 1958   4 1958.292  317.45       317.45 315.29   -1
+#3 1958   5 1958.375  317.50       317.50 314.71   -1
+mon = co2m[,3]
+co2 = co2m[,5]
+#setEPS() # save the .eps figure file to the working directory
+#postscript("fig0701.eps", height = 8, width = 10)
+par(mar=c(2.2,4.5,2,0.5))
+plot(mon, co2, type="l", col="red",
+     main = 
+       expression(paste("Monthly Atmospheric ", 
+                        CO[2]," at Mauna Loa Observatory")),
+     xlab ="", 
+     ylab="Parts Per Million [ppm]",
+     cex.axis =1.4, cex.lab=1.4, cex.main= 1.5)
+text(1985, 410, "Scripps Institution of Oceanography", 
+     cex=1.5)
+text(1985, 400, "NOAA Global Monitoring Laboratory", 
+     cex=1.5)
+lines(mon, co2m[,6]) #plot the trend data
+#dev.off()
+
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.2: Time Series Decomposition
+```{r warning=FALSE}
+co2.ts = ts(co2, start=c(1958,3), end=c(2020,7), 
+            frequency =12)
+co2.ts #Display time series with month and year
+#        Jan    Feb    Mar    Apr    May    Jun    Jul    Aug    
+#1958               315.71 317.45 317.50 317.10 315.86 314.93 
+#1959 315.62 316.38 316.71 317.72 318.29 318.15 316.54 314.80 
+#1960 316.43 316.97 317.58 319.02 320.03 319.59 318.18 315.91 
+
+#Decompose a time series into components of trend, 
+#seasonal cycle, and random residual
+co2.decompose <- decompose(co2.ts)
+#Plot the time series and its three components 
+plot(co2.decompose, xlab ="")
+#Change the title of the plot
+my_plot.decomposed.ts = function(x, title="", ...) {
+  xx <- x$x
+  if (is.null(xx)) 
+    xx <- with(x, if (type == "additive") 
+      random + trend + seasonal
+      else random * trend * seasonal)
+  plot(cbind(observed = xx, trend = x$trend, 
+             seasonal = x$seasonal, random = x$random), 
+       main=title, ...)
+}
+par(mar=c(2,4.5,2.5,0.2))
+my_plot.decomposed.ts(co2.decompose, 
+                      expression(paste("Monthly Atmospheric ", 
+                                       CO[2]," [ppm] at Mauna Loa Observatory")),
+                      xlab ="", cex.lab=1.5, cex.axis=1.8)
+
+plot(co2.decompose$trend, type = 'l')
+lines(mon, co2m[,6], col = 'red')
+
+plot(co2.decompose$trend - co2m[,6], type = 'l')
+
+#Trend component
+summary(co2.decompose$trend, na.rm=TRUE)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+#315.4   330.1   352.9   355.2   377.9   412.8      12 
+plot(co2.decompose$trend, type = 'l')
+
+#Seasonal component
+round(summary(co2.decompose$seasonal, na.rm=TRUE), 
+      digits = 3)
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#-3.256  -1.484   0.678   0.013   2.318   3.031 
+plot(co2.decompose$seasonal, type = 'l')
+plot(co2.decompose$seasonal[1:50], type = 'l')
+
+#Random component  
+round(summary(co2.decompose$random, na.rm=TRUE), 
+      digits = 4)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+#-0.9628 -0.1817  0.0034 -0.0009  0.1818  1.2659      12 
+which (co2.decompose$random > 1.0)
+#[1] 186 698
+co2m[c(186, 698),]
+#year mon     date average interpolated  trend days
+#186 1973   8 1973.625  329.31       329.31 330.42   -1
+#698 2016   4 2016.292  407.45       407.45 404.60   25
+sd(co2.decompose$random, na.rm=TRUE)
+#[1] 0.2953659
+plot(co2.decompose$random, type = 'l')
+
+###
+min(co2.decompose$trend - co2m[,6], na.rm=TRUE)
+###older version to be deleted
+#setwd("/Users/sshen/climstats")
+co2m = read.table("data/co2m.txt", header = TRUE)
+dim(co2m)
+# [1] 749   7
+co2m[1:3,]
+#year mon     date average interpolated  trend days
+#1 1958   3 1958.208  315.71       315.71 314.62   -1
+#2 1958   4 1958.292  317.45       317.45 315.29   -1
+#3 1958   5 1958.375  317.50       317.50 314.71   -1
+mon = co2m[,3]
+co2 = co2m[,5]
+##### test
+co2_12 = c(1:2, co2, 8:12)
+length(co2_12)/12
+#[1] 63
+mon[35: (35 + 12*50 -1)] #Jan 1961-Dec 2010
+co2mat = matrix(co2_12, ncol =12, byrow = TRUE)
+clim = matrix(0, nrow =length(mon), ncol = 12)
+clim = colMeans(co2mat)
+plot(clim)
+co2trend = 1:length(mon)
+for (i in 1: length(mon)){
+  co2trend[i] = co2[i]-clim[co2m[i,2]] + mean(clim)
+}
+plot(co2trend, type = 'l')
+lines(co2m[,6], type = 'l', col ='red')
+plot(co2trend - co2m[,6], type = 'l')
+plot(co2m[,6], type = 'l')
+####
+
+#Plot the nonlinear trend line
+#install.packages('forecast')
+library(forecast)
+co2.ts = ts(co2, start=c(1958,3), end=c(2020,7), 
+            frequency =12)
+co2.decompose <- decompose(co2.ts)
+plot(co2.decompose$trend,  
+      ylab = 'CO2 [ppm]', xlab = 'Time [mon]')
+```
+
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.3: Time Series Forecast for CO2
+```{r}
+#by ETS(Error, Trend, and Seasonal) smoothing
+library(forecast)
+co2forecasts <- ets(co2.ts,model="AAA")
+#ETS model AAA means exponential smoothing with 
+#season and trend
+#Forecast 48 months to the future
+co2forecasts <- forecast(co2forecasts, h=48)
+plot(co2forecasts,
+     ylab="Parts per million [ppm]",
+     main = "Observed (red) and ETS Forecast (blue)",
+     cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.2,
+     lwd = 2)
+lines(co2.ts, col='red')
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.4: Daily Tmin at ST PAUL Station, Minnesota 
+```{r}
+#1941-1950 MINNEAPOLIS/ST PAUL
+#GHCND:USW00014927  44.8831N  93.2289W  265.8Elev  
+#setwd("/Users/sshen/climstats")
+tda = read.table("data/StPaulStn.txt", header = F)
+dim(tda)
+#[1] 7589   13
+#Col12 = Tmin, col9 = PRCP, col8 = Date
+t1 = tda[,8] #date
+tmin = tda[, 12] #Tmin data
+t1[1462]
+#[1] 19410101
+t1[5112]
+#[1] 19501231
+da = tmin[1462:5112]
+ta = t1[1462:5112]
+dav = as.vector(t(da))
+Tmin.ts = ts(dav, start=c(1941,1,1), 
+             end=c(1950,12,31), 
+             frequency =365)
+#ETS time series decomposition
+Tmin.decompose <- decompose(Tmin.ts)
+plot(Tmin.decompose)
+#Change the title of the ETS decomposition figure
+my_plot.decomposed.ts = function(x, title="", ...) {
+  xx <- x$x
+  if (is.null(xx)) 
+    xx <- with(x, if (type == "additive") 
+      random + trend + seasonal
+      else random * trend * seasonal)
+  plot(cbind(observed = xx, trend = x$trend, 
+             seasonal = x$seasonal, random = x$random), 
+       main=title, ...)
+}
+par(mar=c(2,4.5,2.5,0.2))
+my_plot.decomposed.ts(Tmin.decompose, 
+ title = "St. Paul (Minnesota, USA) Daily Tmin (deg C): 1941-1950",
+               xlab ="", cex.lab=1.5, cex.axis=1.8)
+
+#Check the minimum noise day:
+n1 = which(Tmin.decompose$random < -20)
+tda[(n1 + 1641 - 3): (n1 + 1641 + 3), 8:13]
+#4268 19480907  0 -9999 23.3 13.3 -9999
+#PRCP = 0 [mm], Tmin = 13.3 [deg C]
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.5: Generate White Noise
+```{r}
+set.seed(119) # set seed to ensure the same simulation result
+wa <- rnorm(500, mean = 0, sd = 1)
+par(mar=c(4.5,4.5,2.5, 0.3))
+plot(wa, type = 'l', 
+     xlab = 'Time', ylab = expression(W[t]),
+     main = 'A Simulated Time Series of White Noise ',
+     cex.lab=1.5, cex.axis=1.5)
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.6: Histogram and ACF of White Noise
+```{r}
+par(mfrow=c(1,2))
+par(mar=c(4.5,4.5,2.5, 0))
+hist(wa, freq=F, breaks=16, 
+     xlim =c(-4,4), ylim=c(0,0.4),
+     xlab = expression(W[t]),
+     main='Histogram of a White Noise Time Series',
+     cex.lab=1.5, cex.axis=1.5) 
+x=seq(-4,4, by=0.1)
+lines(x,dnorm(x, mean=0, sd=1), col='blue', 
+      type = 'l', lwd=1.5)
+par(mar=c(4.5,4.5,3, 0.3))
+acf(wa, main='Auto-correlation of White Noise',
+    cex.lab=1.5, cex.axis=1.5)
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.7: Random Walk Time Series
+```{r}
+#(a) Five realizations with different sigma values
+n = 1000 #Total number of time steps
+m = 5 #Number of time series realizations
+a = 0.05 #Drift delta = 0.05
+b = c(0.1, 0.4, 0.7, 1.0, 1.5) #SD sigma
+#Generate the random walk time series data
+x = matrix(rep(0, m*n), nrow=m)
+for(i in 1:m){
+  w = rnorm(n, mean =0, sd = b[i])
+  for(j in 1:(n-1)){
+    x[i,j+1] = a + x[i,j] + w[j]
+  }
+}
+#Plot the five time series realizations
+par(mfrow=c(1,2))
+par(mar=c(4.5,4.5, 2.5, 0.5))
+plot(x[1,], type='l', ylim=c(-20,100),
+     xlab ="Time steps: t", ylab = expression(X[t]),
+     main = expression('Five realizations of random walks:'
+                       ~ delta ~'= 0.05'),
+     cex.lab=1.6, cex.axis=1.5, cex.main =1.6)
+lines(x[2,], type='l', col='blue')
+lines(x[3,], type='l', col='red')
+lines(x[4,], type='l', col='orange')
+lines(x[5,], type='l', col='brown')
+legend(-100, 110, 
+       legend=c(expression(sigma ~ '= 0.1'), 
+                expression(sigma ~ '= 0.4'),
+                expression(sigma ~ '= 0.7'),
+                expression(sigma ~ '= 1.0'),
+                expression(sigma ~ '= 1.5')), 
+       col=c('black','blue','red','orange','brown'), 
+       x.intersp = 0.2, y.intersp = 0.4, 
+       seg.len = 0.6, lty =1, bty ='n', cex = 1.3)
+text(20,-20, "(a)", cex =1.4)
+
+#(b) 100 realizations with fixed parameters 
+#Random walk to show variance increasing with time
+n = 1000 #Total number of time steps
+m = 100 #Number of time series realizations
+a = 0.0 #Drift delta = 0
+b = rep(1, m) #SD sigma is the same
+#Generate the random walk time series data
+x = matrix(rep(0, m*n), nrow=m)
+for(i in 1:m){
+  w = rnorm(n, mean =0, sd = b[i])
+  for(j in 1:(n-1)){
+    x[i,j+1] = a + x[i,j] + w[j]
+  }
+}
+#Plot the series realizations
+par(mar=c(4.5,4.5, 2.5, 0.8))
+plot(x[1,], type='l', ylim=c(-100,100),
+     xlab ="Time steps: t", ylab = expression(X[t]),
+     main = expression('100 realizations of random walks:'
+                       ~ delta ~'= 0,'~~ sigma ~'= 1'),
+     cex.lab=1.6, cex.axis=1.5, cex.main =1.6)
+for(i in 2:m){
+  lines(x[i,], type='l')
+}
+library(matrixStats)
+y = colSds(x)
+lines(y,type='l', lwd=2, col='red')
+lines(-y,type='l', lwd=2, col='red') 
+z = sqrt(1:n)
+lines(z,type='l', lwd=2, col='blue')
+lines(-z,type='l', lwd=2, col='blue')
+legend(-150, 120, 
+    legend=c('Standard deviation of the simulations SD(t)',
+  expression('Theorectical formula: SD(t)'%prop% sqrt(t))),
+       col=c('red','blue'), cex = 1.3,
+       x.intersp = 0.2, y.intersp = 0.3, 
+       seg.len = 0.4, lty=1, bty='n', lwd =2)
+text(20,-100, "(b)", cex =1.4)
+#dev.off() #go back to R's default figure setting
+
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.8: Moving Average Time Series
+```{r}
+n = 121
+w = rnorm(n)
+x1 = x2 = x3 = rep(0, n)
+for (t in 5:n){
+  x1[t] = 0.5*w[t] + 0.5*w[t-1]
+  x2[t] = 0.9*w[t] + 0.1*w[t-1]
+  x3[t] = (1/5)*(w[t] + w[t-1] + w[t-2] + w[t-3] + w[t-4])
+}
+plot.ts(x1[5:n], ylim= c(-2,3),
+        main="Realizations of moving average time series",
+        xlab ="Time steps", ylab = expression(X[t]),
+        cex.lab=1.5, cex.axis=1.5, lwd=2)
+lines(x2[5:n], col='blue')
+lines(x3[5:n], col='red', lwd=2)
+legend(5, 3.2, bty='n', lty=1, y.intersp=0.7,
+       legend=(c("MA(1): a = 0.5, b = 0.5",
+                 "MA(1): a = 0.9, b = 0.1",
+                 "MA(5): Uniform weight = 1/5")),
+       col=c('black','blue','red'), 
+       lwd = c(2,1,2))
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.9: Autoregressive Time Series AR(1)
+```{r}
+set.seed(791)
+n = 121 #Number of time steps
+m = 4 #Number of realizations
+lam = 0.8 #Decay parameter
+x = matrix(rep(4, n*m), nrow=m) #x0 = 4
+#Simulate the time series data
+for(k in 1:m){
+  for(i in 1:(n-1)){
+    x[k,i+1] = x[k,i]*lam + 
+      rnorm(1, mean=0, sd=0.25)
+  }
+}
+#Plot the realizations and their mean
+plot.ts(x[1,], type = 'l', ylim=c(-2,4),
+        main="Realizations of an AR(1) time series and their mean",
+        xlab ="Time steps", ylab = expression(X[t]),
+        cex.lab=1.5, cex.axis=1.5,
+        col='purple')
+lines(x[2,], col='blue')
+lines(x[3,], col='red')
+lines(x[4,], col='orange')
+lines(colMeans(x),  lwd=3)
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.10: ACF of AR(1)
+```{r}
+#setwd('/Users/sshen/climstats')
+n = 481 #Number of time steps
+m = 2 #Number of realizations
+lam = c(0.9, 0.6) #Decay parameter
+x = matrix(rep(4, n*m), nrow=m) #x0 = 4
+#Simulate the time series data
+for(k in 1:m){
+  for(i in 1:(n-1)){
+    x[k,i+1] = x[k,i]*lam[k] + 
+      rnorm(1, mean=0, sd=0.25)
+  }
+}
+#Plot the auto-correlation function
+#setEPS() #Automatically saves the .eps file
+#postscript("fig0710.eps", width=10, height=5)
+par(mfrow=c(1,2))
+par(mar=c(4.5, 4.5, 3, 1))
+acf(x[1,], lag.max = 36,
+    main = 'Auto-correlation function of AR(1)',
+    xlab='Time lag',
+    cex.lab=1.5, cex.axis=1.5)
+text(20, 0.8, bquote('Decay parameter'~lambda == 0.9),
+     cex=1.5)
+par(mar=c(4.5,4.5,3, 0.3))
+acf(x[2,], lag.max = 36, 
+    main = 'Auto-correlation function of AR(1)',
+    xlab='Time lag', col='red',
+    cex.lab=1.5, cex.axis=1.5)
+text(20, 0.8, expression('Decay parameter'~lambda == 0.6),
+     col='red', cex=1.5)
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 7.11: ARIMA Model Fitting
+```{r}
+#setwd("/Users/sshen/climstats")
+co2m = read.table("data/co2m.txt", header = TRUE)
+mon = co2m[,3]
+co2 = co2m[,5]
+co2.ts = ts(co2, start=c(1958,3), end=c(2020,7), 
+            frequency =12) 
+#Then fit an AR(1) model
+co2.AR1 <- arima(co2.ts, order = c(1,0,0))
+#Obtain the AR(1) model fit data
+AR1_fit <- co2.ts - residuals(co2.AR1) 
+#Fit an MA(1) model
+co2.MA1 <- arima(co2.ts, order = c(0,0,1))
+#Obtain the MA(1) model fit data
+MA1_fit <- co2.ts - residuals(co2.MA1) 
+
+#setEPS() #Automatically saves the .eps file
+#postscript("fig0711.eps", width=8, height=6)
+#Plot the CO2 time series
+par(mar=c(3,4.5,2.5, 0.5))
+plot(mon, co2, ylim=c(310,420),
+     type='l', lwd=2, col = 'red',
+     main = bquote("Monthly Atmospheric "~ 
+                     CO[2]~" at Mauna Loa Observatory"),
+     xlab ="", 
+     ylab="Parts Per Million [ppm]",
+     cex.main=1.5,
+     cex.lab =1.5, cex.axis=1.5) 
+#Plot the AR(1) model data on the CO2 data
+points(AR1_fit, type = "l", lwd=1, 
+       col = 'black', lty = 2)
+points(MA1_fit, type = "l", lwd=1, 
+       col = 'blue', lty = 2)
+legend(1960, 420, lty=c(1, 2, 2),
+       col=c('red','black', 'blue'),
+       legend=c("Observed data", 
+                "AR(1) model fitting", 
+                "MA(1) model fitting"),
+       text.col = c('red','black', 'blue'),
+       x.intersp = 0.2, y.intersp = 1.4, 
+       seg.len = 0.8, cex=1.5, bty = 'n')
+#dev.off()
+
+```

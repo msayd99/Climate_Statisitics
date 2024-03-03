@@ -1,0 +1,355 @@
+---
+title: "&nbsp;"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<center><h1>Statistics and Data Visualizations in Climate Science</h1></center>
+<center><h1>with R and Python</h1></center>
+<p>&nbsp;</p>
+<center><h3>A Cambridge University Press Book by</h3></center>
+<center><h3>SSP Shen and GR North</h3></center>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<div align="center">Version 1.0 released in July 2023 and coded by Dr. Samuel Shen, Distinguished Professor</div>
+<div align="center">San Diego State University, California, USA</div> 
+<div align="center"><https://shen.sdsu.edu></div> 
+<div align="center">Email: <sshen@sdsu.edu></div> 
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+## Chapter 5: Matrices for Climate Data 
+
+### R Code: Computational Examples of Matrices
+```{r}
+A = matrix(c(1,0,0,4,3, 2), nrow = 3, byrow = TRUE)
+B = matrix(c(0,1,-1,2), nrow = 2) #form a matrix by columns
+C = A%*%B #matrix multiplication
+C
+#[1,]    0   -1
+#[2,]    4    8
+#[3,]    2    1
+t(C) # transpose matrix of C
+#[1,]    0    4    2
+#[2,]   -1    8    1
+
+A = matrix(c(1, -1, 1, 2), nrow =2, byrow = TRUE)
+solve(A) #compute the inverse of A
+#[1,]  0.6666667 0.3333333
+#[2,] -0.3333333 0.3333333
+A%*%solve(A) #verify the inverse of A
+#[1,] 1.000000e+00    0
+#[2,] 1.110223e-16    1
+
+#Solve linear equations
+A = matrix(c(30, 40, 1, 1), nrow =2, byrow = TRUE)
+b = c(1000, 30)
+solve(A,b)
+#[1] 20 10
+solve(A)%*%b #Another way to solve the equations
+det(A) #compute the determinant
+#[1] -10
+
+#install.packages('Matrix')
+library(Matrix)
+rankMatrix(A) #Find the rank of a matrix
+#[1] 2 #rank(A) = 2
+
+#Orthogonal matrices
+p = sqrt(2)/2
+Q = matrix(c(p,-p,p,p), nrow=2) 
+Q #is an orthogonal matrix 
+#           [,1]      [,2]
+#[1,]  0.7071068 0.7071068
+#[2,] -0.7071068 0.7071068
+Q%*%t(Q) #verify O as an orthogonal matrix
+#     [,1] [,2]
+#[1,]    1    0
+#[2,]    0    1
+det(Q) #The determinant of an orthogonal matrix is 1 or -1
+#[1] 1
+
+
+#Eigenvectors and eigenvalues
+A = matrix(c(1,2,2,1), nrow = 2)
+eigen(A)
+#$values
+#[1]  3 -1
+#$vectors
+#[,1]       [,2]
+#[1,] 0.7071068 -0.7071068
+#[2,] 0.7071068  0.7071068
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 5.2: R code
+```{r}
+#setwd('/Users/sshen/climstats')
+#setEPS() #Plot the figure and save the file
+#postscript("fig0502.eps", width = 6)
+par(mar=c(4.5,4.5,2.0,0.5))
+plot(9,9,
+     main = 'An eigenvector vs a non-eigenvector',
+     cex.axis = 1.4, cex.lab = 1.4,
+     xlim = c(0,3), ylim=c(0,3),
+     xlab = bquote(x[1]), ylab = bquote(x[2]))
+arrows(0,0, 1,0, length = 0.25, 
+       angle = 8, lwd = 5, col = 'blue')
+arrows(0,0, 1,2, length = 0.3, 
+       angle = 8, lwd = 2, col = 'blue',  lty = 3)
+arrows(0,0, 1,1, length = 0.25, 
+       angle = 8, lwd = 5, col='red') 
+arrows(0,0, 3,3, length = 0.3, 
+       angle = 8, lwd = 2, col='red', lty = 3)
+text(1.4,0.1, 'Non-eigenvector u', cex =1.4, col = 'blue')
+text(1.0,2.1, 'Au', cex =1.4, col = 'blue')
+text(1.5,0.9, 'Eigenvector v', cex =1.4, col = 'red')
+text(2.8, 2.95, 'Av', cex =1.4, col = 'red')
+#dev.off()
+
+#
+# Verify diagonalization and decomposition: R code
+C = matrix(c(2,1,1,2), nrow = 2)
+eigen(C)
+#$values
+#[1] 3 1
+#$vectors
+#  [,1]       [,2]
+#[1,] 0.7071068 -0.7071068
+#[2,] 0.7071068  0.7071068
+Q = eigen(C)$vectors
+D = t(Q)%*%C%*%Q #Matrix diagonalization
+D
+#[1,]    3    0
+#[2,]    0    1
+Q%*%D%*%t(Q) #Matrix decomposition
+#[1,]    2    1
+#[2,]    1    2
+D[1,1]*Q[,1]%*%t(Q[,1]) + D[2,2]*Q[,2]%*%t(Q[,2])
+#[1,]    2    1
+#[2,]    1    2
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 5.3: R code
+```{r}
+#setwd('/Users/sshen/climstats')
+#setEPS() #Plot the figure and save the file
+#postscript("fig0503.eps", width = 11)
+par(mar=c(0,0,0,0))
+plot(200, axes = FALSE,
+     xlab = "", ylab = "",
+     xlim = c(-3,28), ylim = c(-3,16))
+text(13,15.5, cex=2.0,
+     bquote("SVD:" ~ A==UDV^t~ 
+     "when n > m (top panel) or n < m (bottom panel)"))
+#Space-time data matrix A when n>m
+segments(x0 = c(0,0,3,3),
+         y0 = c(6,12,12,6) +1,
+         x1 = c(0,3,3,0),
+         y1 = c(12,12,6,6) +1, 
+         col = c('blue','red','blue','red'),lwd =3)
+segments(x0 = c(0.5,1.0),
+         y0 = c(6,6)+1,
+         x1 = c(0.5,1.0),
+         y1 = c(12,12)+1,
+         lwd =1.3, lty = 3)
+text(-.8, 9+1, 'n', srt=90, col ='blue', cex = 1.4)
+text(1.5, 12.8+1, 'm', col = 'red',  cex = 1.4)
+text(2.0, 9+1, '...',  cex = 1.4)
+text(2, 5+1, bquote(A[n%*%m]),  cex = 2.5)
+text(5, 9+1, '=',  cex = 3)
+#Spatial matrix U
+segments(x0 = c(7,7,10,10),
+         y0 = c(6,12,12,6)+1,
+         x1 = c(7,10,10,7),
+         y1 = c(12,12,6,6)+1, 
+         col = c('blue','blue','blue','blue'), lwd =3)
+segments(x0 = c(7.5,8),
+         y0 = c(6,6)+1,
+         x1 = c(7.5,8),
+         y1 = c(12,12)+1,
+         lwd =1.3, lty = 3, col = 'blue')
+text(6.2, 9+1, 'n', srt=90, col ='blue', cex = 1.4)
+text(8.5, 12.8+1, 'm', col = 'red',  cex = 1.4)
+text(9, 9+1, '...',  cex = 1.4, col='blue')
+text(8.7, 5.0+1, bquote(U[n%*%m]),  cex = 2.5, col= 'blue')
+#Singular value diagonal matrix D
+segments(x0 = c(12,12,15,15),
+         y0 = c(9,12,12,9)+1,
+         x1 = c(12,15,15,12),
+         y1 = c(12,12,9,9)+1, 
+         col = c('brown','brown','brown','brown'), lwd =3)
+segments(x0 = 12, y0 = 12+1, x1 = 15, y1 = 9+1, lty=3,
+         col = c('brown'), lwd =1.3)#diagonal line
+text(11.2, 10.5+1, 'm', srt=90, col ='red', cex = 1.4)
+text(13.5, 12.8+1, 'm', col = 'red',  cex = 1.4)
+text(14.1, 11.3+1, '0', col = 'brown',  cex = 1.4)
+text(12.9, 10.0+1, '0', col = 'brown',  cex = 1.4)
+text(13.9, 8.0+1, bquote(D[m%*%m]),  cex = 2.5, col='brown')
+#Temporal matrix V
+segments(x0 = c(17,17,20,20),
+         y0 = c(9,12,12,9)+1,
+         x1 = c(17,20,20,17),
+         y1 = c(12,12,9,9)+1, 
+         col = c('red','red','red','red'), lwd =3)
+segments(x0 = c(17,17),
+         y0 = c(11.5,10.8)+1,
+         x1 = c(20,20),
+         y1 = c(11.5,10.8)+1, 
+         col = c('red','red'), lty=3, lwd =1.3)
+text(16.2, 10.5+1, 'm', srt=90, col ='red', cex = 1.4)
+text(18.5, 12.5+1, 'm', col = 'red',  cex = 1.4)
+text(19.5, 8+1, bquote((V^t)[m%*%m]),  cex = 2.5, col='red')
+text(18.5, 10+1, '...',  col='red', srt=90, cex =1.4)
+# Space-time data matrix B when n < m
+segments(x0 = c(0,0,6,6),
+         y0 = c(0,3,3,0),
+         x1 = c(0,6,6,0),
+         y1 = c(3,3,0,0), 
+         col = c('blue','red','blue','red'), lwd =3)
+segments(x0 = c(1,2,5),
+         y0 = c(0,0,0),
+         x1 = c(1,2,5),
+         y1 = c(3,3,3),
+         lwd =1.3, lty = 3)
+text(-0.8, 1.5, 'n', srt=90, col ='blue', cex = 1.4)
+text(3, 3.8, 'm', col = 'red',  cex = 1.4)
+text(3.5, 1.5, '...',  cex = 1.4)
+text(3, -1.5, bquote(A[n%*%m]),  cex = 2.5)
+text(8, 1.5, '=',  cex = 3)
+#Spatial matrix U
+segments(x0 = c(11,11,14,14),
+         y0 = c(0,3,3,0),
+         x1 = c(11,14,14,11),
+         y1 = c(3,3,0,0), 
+         col = c('blue','blue','blue','blue'), lwd =3)
+segments(x0 = c(11.5,12.2),
+         y0 = c(0,0),
+         x1 = c(11.5,12.2),
+         y1 = c(3,3),
+         lwd =1.3, lty = 3, col = 'blue')
+text(10.2, 1.5, 'n', srt=90, col ='blue', cex = 1.4)
+text(12.5, 3.8, 'n', col = 'blue',  cex = 1.4)
+text(13.2, 1.5, '...',  cex = 1.4, col='blue')
+text(12.5, -1.5, bquote(U[n%*%n]),  cex = 2.5, col= 'blue')
+#Singular value diagonal matrix D
+segments(x0 = c(16,16,19,19),
+         y0 = c(0,3,3,0),
+         x1 = c(16,19,19,16),
+         y1 = c(3,3,0,0), 
+         col = c('brown','brown','brown','brown'), lwd =3)
+segments(x0 = 16, y0 = 3, x1 = 19, y1 = 0, lty=3,
+         col = c('brown'), lwd =1.3)#diagonal line
+text(15.2, 1.5, 'n', srt=90, col ='blue', cex = 1.4)
+text(17.5, 3.8, 'n', col = 'blue',  cex = 1.4)
+text(18.1, 2.3, '0', col = 'brown',  cex = 1.4)
+text(16.9, 1.0, '0', col = 'brown',  cex = 1.4)
+text(17.5, -1.5, bquote(D[n%*%n]),  cex = 2.5, col='brown')
+#Temporal matrix V
+segments(x0 = c(21,21,27,27),
+         y0 = c(0,3,3,0),
+         x1 = c(21,27,27,21),
+         y1 = c(3,3,0,0), 
+         col = c('red','red','red','red'),
+         lwd =3)
+segments(x0 = c(21,21),
+         y0 = c(2.5,1.8),
+         x1 = c(27,27),
+         y1 = c(2.5,1.8), 
+         col = c('red','red'), lty=3, lwd =1.3)
+text(20.2, 1.5, 'n', srt=90, col ='blue', cex = 1.4)
+text(24, 3.8, 'm', col = 'red',  cex = 1.4)
+text(24, -1.5, bquote((V^t)[n%*%m]),  cex = 2.5, col='red')
+text(24, 1, '...',  col='red', srt=90, cex =1.4)
+#dev.off()
+
+```
+
+
+<p>&nbsp;</p>
+### SVD Example for a 2-by-3 Matrix: R code
+```{r}
+A=matrix(c(-1,1,0,2,-2,3),nrow=2)
+A #Show the 2-by-3 matrix
+#     [,1] [,2] [,3]
+#[1,]   -1    0   -2
+#[2,]    1    2    3
+svdA=svd(A) #Compute the SVD of A and put the results in svdA
+svdA #Show SVD results: d, U, and V
+round(svdA$d, digits=2) #Show only the singular values
+#[1] 4.22 1.09
+round(svdA$u, digits=2) #Show only matrix U
+#      [,1] [,2]
+#[1,] -0.48 0.88
+#[2,]  0.88 0.48
+round(svdA$v, digits=2)#Show only matrix V
+#     [,1]  [,2]
+#[1,] 0.32 -0.37
+#[2,] 0.42  0.88
+#[3,] 0.85 -0.29
+sqrt(eigen(A%*%t(A))$values)
+#[1] 4.221571 1.085514
+```
+
+
+<p>&nbsp;</p>
+### Data Reconstruction by Singular Vectors: R code
+```{r}
+round(svdA$d[1]*svdA$u[,1]%*%t(svdA$v[,1]), 
+      digits=1)
+#     [,1] [,2] [,3]
+#[1,] -0.7 -0.8 -1.7
+#[2,]  1.2  1.5  3.2
+
+round(svdA$d[1]*svdA$u[,1]%*%t(svdA$v[,1]) + 
+        svdA$d[2]*svdA$u[,2]%*%t(svdA$v[,2]), 
+      digits =2)
+#     [,1] [,2] [,3]
+#[1,]   -1    0   -2
+#[2,]    1    2    3
+```
+
+
+<p>&nbsp;</p>
+### Weighted SOI from Standardized SLP Anomalies: R code
+```{r}
+#setwd("/Users/sshen/climmath")
+Pda<-read.table("data/PSTANDdarwin.txt", header=F)
+dim(Pda) 
+#[1] 65 13 #Monthly Darwin data from 1951-2015
+pdaDec<-Pda[,13] #Darwin Dec standardized SLP anomalies data
+Pta<-read.table("data/PSTANDtahiti.txt", header=F)
+ptaDec=Pta[,13] #Tahiti Dec standardized SLP anomalies
+ptada1 = cbind(pdaDec, ptaDec) #space-time data matrix
+
+#Space-time data format
+ptada = t(ptada1[59:65,]) #2009-2015 data
+colnames(ptada)<-2009:2015
+rownames(ptada)<-c("Darwin", "Tahiti")
+ptada #6 year of data for two stations
+#       2009 2010 2011 2012 2013 2014 2015
+#Darwin  0.5 -2.3 -2.2  0.3  0.3  0.1 -0.4
+#Tahiti -0.7  2.5  1.9 -0.7  0.4 -0.8 -1.3
+svdptd = svd(ptada) #SVD for the 2-by-6 matrix
+U=round(svdptd$u, digits=1)
+U
+#[1,] -0.7  0.8
+#[2,]  0.8  0.7
+D=round(diag(svdptd$d), digits=1)
+D
+#[1,]  4.7  0.0
+#[2,]  0.0  1.4
+V =round(svdptd$v, digits=1)
+t(V)
+#[1,] -0.2  0.7  0.6 -0.2  0.0 -0.1 -0.2
+#[2,] -0.1 -0.1 -0.3 -0.2  0.3 -0.3 -0.8
+```

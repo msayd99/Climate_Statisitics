@@ -1,0 +1,527 @@
+---
+title: "&nbsp;"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<center><h1>Statistics and Data Visualizations in Climate Science</h1></center>
+<center><h1>with R and Python</h1></center>
+<p>&nbsp;</p>
+<center><h3>A Cambridge University Press Book by</h3></center>
+<center><h3>SSP Shen and GR North</h3></center>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<div align="center">Version 1.0 released in July 2023 and coded by Dr. Samuel Shen, Distinguished Professor</div>
+<div align="center">San Diego State University, California, USA</div> 
+<div align="center"><https://shen.sdsu.edu></div> 
+<div align="center">Email: <sshen@sdsu.edu></div> 
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+## Chapter 6: Covariance Matrices, EOFs, and PCs
+
+### Plot Fig. 6.1a, b, c: and Covariance Map by R code
+```{r}
+#Covariance from NOAAGlaobalTemp data: December SAT anomalies  
+#setwd('/Users/sshen/climstats') 
+#install.packages('ncdf4')
+library(ncdf4)
+nc=ncdf4::nc_open("data/air.mon.anom.nc") #Read data
+nc #Check metadata of the dataset
+nc$dim$lon$vals # 2.5 - 357.5
+nc$dim$lat$vals # -87.5 - 87.5
+nc$dim$time$vals
+lon <- ncvar_get(nc, "lon")
+lat <- ncvar_get(nc, "lat")
+time<- ncvar_get(nc, "time")
+library(chron)
+month.day.year(29219,c(month = 1, day = 1, year = 1800))
+#1880-01-01
+sat<- ncvar_get(nc, "air")
+dim(sat)
+#[1] 72   36 1674 
+#1674 months=1880-01 to 2019-06, 139 years 6 mons
+
+Dec = seq(12, 1674, by=12)
+Decsat=sat[,, Dec]
+N = 72*36
+P = length(Dec)
+STsat = matrix(0, nrow=N, ncol=P)
+for (k in 1:P){STsat[,k]=as.vector(Decsat[,,k])}
+colnames(STsat)<-1880:2018
+STsat[1:4,1:4]
+LAT=rep(lat, each=72)
+LON=rep(lon,36)
+STanom=cbind(LAT, LON, STsat)
+dim(STanom)
+#[1] 2592  141
+
+#Plot Fig. 6.1a: Zonal covariance matrix 
+#Select only the data for the equatorial band -2.5S
+n1<-which(STanom[,1]>-4&STanom[,1]<0
+          &STanom[,2]>0&STanom[,2]<360)
+dim(STanom)
+#[1] 2592  141
+length(n1)
+#[1] 72 longitude grid boxes at -2.5S
+P1=84
+P2=133
+P= P2 - P1 + 1
+dat1=STanom[n1,P1:P2] #1961-2010
+dim(dat1)
+#[1] 72 50
+#72 grid boxes, 50 years of Dec from 1961-2010. 
+dat1[1:3,48:50]
+Lat1=STanom[n1,1]
+Lon1=STanom[n1,2]
+AreaFac = sqrt(cos(Lat1*pi/180))
+dat2 = dat1 - rowMeans(dat1) #Minus the mean
+Banddat = AreaFac*dat2
+covBand = Banddat%*%t(Banddat)
+max(covBand)
+#[1] 90.67199
+min(covBand)
+#[1] -6.191734
+int=seq(-7, 92,length.out=81)
+rgb.palette=colorRampPalette(c('blue', 'darkgreen',
+ 'green', 'yellow','pink','red','maroon'),
+                             interpolate='spline')
+#setEPS() #Plot the figure and save the file
+#postscript("fig0601a.eps", width = 7, height = 5.5)
+par(mar=c(4.2,5.0,1.8,0.0))
+par(cex.axis=1.8,cex.lab=1.8, cex.main=1.7)
+ticks = c(60,  180, 300)
+filled.contour(Lon1, Lon1, covBand, 
+               color.palette=rgb.palette, levels=int,
+               plot.title=title(main=
+ expression("Zonal SAT Covariance: 2.5"*degree*S),
+    xlab="Longitude", ylab="Longitude"),
+   plot.axes = { axis(1, at= ticks); axis(2, at= ticks, las = 0)},
+            key.title=title(main=expression("["*degree*"C]"^2))
+      )
+#dev.off()
+
+###variance as the diagonal covariance
+varzonal = diag(covBand)/(AreaFac)^2
+plot(Lon1, varzonal, type = 'h', lwd =2)
+
+#Plot Fig. 6.1b: Meridional covariance matrix
+#Select only the data for the meridional band 2.5E
+n1<-which(STanom[,1]>-90&STanom[,1]<90
+          &STanom[,2]>0&STanom[,2]<4)
+P1=84 #time index for Dec 1961
+P2=133 #Dec 2010
+P= P2 - P1 + 1 #=50 Decembers
+dat1=STanom[n1,P1:P2] #1961-2010
+Lat1=STanom[n1,1]
+Lon1=STanom[n1,2]
+AreaFac = sqrt(cos(Lat1*pi/180)) 
+dat2 = dat1 - rowMeans(dat1)
+Banddat = AreaFac*dat2
+covBand = Banddat%*%t(Banddat)
+max(covBand, na.rm=TRUE)
+#[1] 115.6266
+min(covBand, na.rm=TRUE)
+#[1] -33.72083
+int=seq(-35,120,length.out=81)
+rgb.palette=colorRampPalette(c('blue', 'darkgreen','green', 
+                               'yellow','pink','red','maroon'),
+                             interpolate='spline')
+ticks = seq(-90, 90, by=30)
+#setEPS() #Plot the figure and save the file
+#postscript("fig0601b.eps", width = 7, height = 5.5)
+par(mar=c(4.2,5.0,1.8,0.0))
+par(cex.axis=1.8, cex.lab=1.8, cex.main=1.7)
+filled.contour(Lat1, Lat1, covBand, 
+               color.palette=rgb.palette, levels=int,
+               plot.title=title(main=
+      expression("SAT Meridional Covariance: 2.5"*degree*E),
+                    xlab="Latitude", ylab="Latitude"),
+plot.axes={axis(1, at=ticks); axis(2, at=ticks, las =0); 
+           grid()},
+      key.title=title(main=expression("["*degree*"C]"^2)))     
+#dev.off()
+
+#plot Fig. 6.1(c)
+month.day.year(time[1416],c(month = 1, day = 1, year = 1800))
+#Dec 1997
+mapmat= sat[,,1416]
+mapmat=pmax(pmin(mapmat,5),-5)
+int=seq(-5, 5,length.out=51)
+rgb.palette=colorRampPalette(c('black','blue',
+  'darkgreen','green', 'white','yellow','pink',
+  'red','maroon'), interpolate='spline')
+#setEPS() #Plot the figure and save the file
+#postscript("fig0601c.eps", width = 7, height = 3.5)
+par(mar=c(4.2,5.0,1.8,0.0))
+par(cex.axis=0.9,cex.lab=0.9, cex.main=0.8)
+library(maps)
+filled.contour(lon, lat, mapmat, 
+               color.palette=rgb.palette, levels=int,
+          plot.title=title(main="December 1997 SAT Anomalies",
+                          xlab="Longitude",ylab="Latitude"),
+               plot.axes={axis(1); axis(2); 
+                 map('world2', add=TRUE);grid()},
+               key.title=title(main=expression(degree*"C")))
+segments(x0=-20,y0=-2.5, x1=255, y1=-2.5, lwd = 5, lty = 2)
+segments(x0=-15,y0=-90, x1=-15, y1=90, lwd = 5, lty = 2)
+#dev.off()
+
+#
+#
+#Zonal covariance matrix 
+#Select only the data for the equatorial band -2.5S
+n1<-which(STanom[,1]>-4&STanom[,1]<0
+          &STanom[,2]>0&STanom[,2]<360)
+dim(STanom)
+#[1] 2592  142
+length(n1)
+#[1] 72 longitude grid boxes at -2.5S
+P1=84
+P2=133
+P= P2 - P1 + 1
+dat1=STanom[n1,P1:P2] #1961-2010
+dim(dat1)
+#[1] 72 50
+#72 grid boxes, 50 years of Dec from 1961-2010. 
+dat1[1:3,47:50]
+Lat1=STanom[n1,1]
+Lon1=STanom[n1,2]
+AreaFac = sqrt(cos(Lat1*pi/180))
+dat2 = dat1 - rowMeans(dat1) #Minus the mean
+Banddat = AreaFac*dat2
+covBand = Banddat%*%t(Banddat)
+```
+
+
+<p>&nbsp;</p>
+### R plot 6.2: Scree plot
+```{r}
+K = 10
+eigCov =eigen(covBand) 
+#covBand is for equatorial zonal band in Fig 6.1(a)
+lam = eigCov$values
+lamK=lam[1:K]
+#setEPS() #Plot the figure and save the file
+#postscript("fig0602.eps", width = 6, height = 4)
+par(mar=c(4,4,2,4), mgp=c(2.2,0.7,0))
+plot(1:K, 100*lamK/sum(lam), ylim=c(0,80), type="o", 
+     ylab="Percentage of Variance [%]",
+     xlab="EOF Mode Number", 
+     cex.lab=1.2, cex.axis = 1.1, lwd=2, 
+     main="Scree Plot of the First 10 Eigenvalues")
+legend(3,30, col=c("black"),lty=1, lwd=2.0,
+       legend=c("Percentange Variance"),bty="n",
+       text.font=2,cex=1.0, text.col="black")
+par(new=TRUE)
+plot(1:K,cumsum(100*lamK/sum(lam)),
+     ylim = c(60,100), type="o",
+     col="blue",lwd=2, axes=FALSE,
+     xlab="",ylab="")
+legend(3,80, col=c("blue"),lty=1,lwd=2.0,
+       legend=c("Cumulative Percentage Variance"),bty="n",
+       text.font=2,cex=1.0, text.col="blue")
+axis(4, col="blue", col.axis="blue", mgp=c(3,0.7,0))
+mtext("Cumulative Variance [%]",col="blue", 
+      cex=1.2, side=4,line=2)
+#dev.off()
+```
+
+
+
+<p>&nbsp;</p>
+### Generate a Random Space-Time Field 
+```{r}
+#Step 1: Generate EOFs
+N <- 100 #Number of spatial points
+eof  <-  function(n, x) (sin(n*x)/sqrt(pi/2))*sqrt((pi/N))
+x  <-  seq(0,pi, len=N)
+sum(eof(4,x)^2)
+#[1] 0.99  #Verify the normalization condition
+sum(eof(1,x)*eof(2,x))
+#[1] 3.035766e-18  #Verify orthogonality 
+
+#Step 2: Generate PCs 
+#install.packages('mvtnorm')
+library(mvtnorm) #Multivariate normal
+Mode <- 5
+Ms <- 1000
+univar <- diag(rep(1,Mode))
+zeromean <- rep(0, Mode)
+rs <- rmvnorm(Ms, zeromean, univar)
+pcm=matrix(0, nrow=Ms, ncol=Mode)
+for(m in 1:Mode){pcm[,m] = rs[,m]*sqrt(1/Ms)}
+t(pcm[,1])%*%pcm[,1]
+#1.010333 #Approximately normalized
+t(pcm[,1])%*%pcm[,2]
+#0.008040772 #Approximately independent/orthorgonal
+
+#Step 3: Generate an independent random field
+lam=c(10, 9, 4.1, 4, 2)
+sqrlam = diag(sqrt(lam))
+eofm = matrix(0, nrow=N, ncol=Mode)
+for(m in 1:Mode){eofm[,m]=eof(m,x)}
+Yxr  <-  eofm%*%sqrlam%*%t(pcm)
+dim(Yxr)
+#[1] 100 1000
+```
+
+
+<p>&nbsp;</p>
+### Durbin-Watson (DW) Test for No Serial Correlation
+```{r warning=FALSE}
+#install.packages('lmtest')
+library(lmtest)
+Ms = 1000
+r = 1:Ms
+regYxr = lm(Yxr[10,] ~ r)
+dwtest(regYxr)
+#DW = 2.0344, p-value = 0.696
+#Implying no significant serial correlation
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 6.3: R code
+```{r}
+#The first 100 samples of the generated field
+r=1:100
+#setEPS()
+#postscript("fig0603.eps", width = 6, height = 4)
+par(mar=c(3.5,3.5,2,0), mgp=c(2.0,0.7,0))
+rgb.palette=colorRampPalette(
+  c('black','blue','green', 
+    'yellow','pink','red','maroon'),
+  interpolate='spline')
+filled.contour(r,x, t(Yxr[,1:100]), 
+         color=rgb.palette, xlab="r", ylab="x", cex.lab=1.2,
+          main="A random field realization from given EOFs",
+          plot.axes={axis(1, cex.axis =1.1); 
+            axis(2, las = 0, cex.axis= 1.2); grid()},
+          key.title={par(cex.main=0.9); title(main="Value")}
+)
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### Scree Plot
+```{r}
+Mode = 1:5
+lam=c(10, 9, 4.1, 4, 2)
+samp = rep("S100", 5)
+sd = sqrt(2/100)*lam
+sd2 = sqrt(2/1000)*lam
+par(mar=c(4.5, 4.5, 1, 0.5))
+plot(Mode, lam, type="l", ylim = c(0,12),
+     xlab="Mode", 
+     ylab=expression("Variance   "*lambda),
+     cex.lab=1.4, cex.axis=1.4)
+points(Mode,lam + sd, pch="-", col="red", cex=2)
+points(Mode,lam - sd, pch="-",col="red", cex=2)
+segments(Mode,lam + sd, Mode,lam - sd, col="red")
+points(Mode+0.06,lam + sd2, pch="-", col="blue", cex=2)
+points(Mode+0.06,lam - sd2, pch="-",col="blue", cex=2)
+segments(Mode +0.06,lam + sd2, 
+         Mode + 0.06,lam - sd2, col="blue")
+text(3.5,12, 
+     "Red standard error bar: 100 samples", col="red")
+text(3.5,11, 
+     "Blue standard error bar: 1000 samples", col="blue")
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 6.4: Scree Plot by R code
+```{r}
+Mode = 1:5
+lam=c(10.0, 9.0, 4.1, 4.0, 2.0)
+samp = rep("S100", 5)
+sd = sqrt(2/100)*lam
+sd2 = sqrt(2/1000)*lam
+#par(mar=c(4.5, 4.5, 1, 0.5))
+#setEPS()
+#postscript("fig0604.eps", width = 10, height = 8)
+par(mar=c(3.5, 4.5, 0.2, 0.5), mgp=c(2.5, 1.0,0))
+plot(Mode, lam, type="l", ylim = c(0,12),
+     xlab="Mode", 
+     ylab=expression("Variance   "*lambda),
+     cex.lab=1.8, cex.axis=1.8)
+points(Mode,lam + sd, pch="-", col="red", cex=2)
+points(Mode,lam - sd, pch="-",col="red", cex=2)
+segments(Mode,lam + sd, Mode,lam - sd, col="red")
+points(Mode+0.06,lam + sd2, pch="-", col="blue", cex=2)
+points(Mode+0.06,lam - sd2, pch="-",col="blue", cex=2)
+segments(Mode +0.06,lam + sd2, Mode + 0.06,lam - sd2, 
+         col="blue")
+text(3.45,12, "Red standard error bar: 100 samples", 
+         cex = 1.5, col="red")
+text(3.5,11, "Blue standard error bar: 1000 samples", 
+     cex = 1.5, col="blue")
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 6.5: 1D EOF Errors by R code
+```{r}
+#Ms= 100 samples for North's rule of thumb
+#install.packages("mvtnorm")
+library(mvtnorm)
+set.seed(112)
+M=100 #M samples or M independent time steps
+N=100 #N spatial locations
+Mode=5 # 5 EOF modes to be considered
+
+#Generate PCs
+lam=c(10.0, 9.0, 4.1, 4.0, 2.0)
+round(sqrt(2/M)*lam, digits = 2)
+#[1] 1.41 1.27 0.58 0.57 0.28
+univar =diag(rep(1,Mode)) #SD = 1
+zeromean = rep(0, Mode) #mean = 0
+rs <- rmvnorm(M, zeromean, univar) 
+dim(rs) # 100 samples and 5 modes
+#[1] 100    5
+mean(rs[,1])
+#[1] -0.02524037
+var(rs[,1])
+#[1] 0.9108917
+t <- seq(0, 2*pi, len=M)
+a51 <-rs[,1]*sqrt(1/M)
+sum(a51^2)
+#[1] 0.9026492 is the variance approximation
+
+pcm=matrix(0, nrow=M, ncol=Mode)
+for(m in 1:Mode){pcm[,m] = rs[,m]*sqrt(1/M)} 
+dim(pcm) #random and independent PCs
+#[1] 100   5
+sum(pcm[,1]^2) #verify the normality of a PC
+#[1] 1.021924
+
+#Generate EOFs for spatial patterns
+eof <- function(n, x) sqrt(2)* sin(n*x)*sqrt((1/N))
+x <- seq(0, pi,len=N) #N locations within [0,1]
+sum(eof(3,x)^2) #verify the normality of an EOF
+#[1] 0.99
+sum(eof(1,x)*eof(2,x)) #verify the EOF orthogonality
+#[1] 3.035766e-18
+
+eofm <- matrix(0, nrow=N, ncol=Mode)
+for (m in 1:Mode){eofm[,m]=eof(m,x)}
+dim(eofm) #eofm are the 5 modes of EOF data
+#[1] 100   5 #100 spatial locations and 5 modes
+
+#Generate the random data with given EOFs
+Lam = diag(sqrt(lam)) #eigenvalue matrix
+da <- eofm%*%Lam%*%t(pcm) #spectral decomposition
+dim(da) #random data at 100 spatial locations
+#[1]  100 100
+svdda <- svd(da)
+round((svdda$d[1:5])^2, digits =2)
+#[1] 10.14  8.12  3.83  3.26  2.10
+
+png(file="fig0605a.png", width=600,height=300)
+k=1
+sum(svdda$u[,k]^2)
+#[1] 1
+par(mar=c(4.5,4.7,2,0.2))
+plot(x,-svdda$u[,k], type="l", ylim=c(-0.2,0.2),
+     xlab="x", ylab=paste("EOF", k), 
+     main="EOF Mode (Blue Curve) vs Exact Mode (Red Curve)",
+     col="blue",
+     cex.lab=1.4, cex.axis=1.4,cex.main=1.4)
+lines(x, eof(k,x), col='red')
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 6.6: R Code for the EOF4 Error
+```{r}
+k = 4 #Use the SVD result from 100 samples R = 100
+plot(x,svdda$u[,k], type="l", ylim=c(-0.33,0.33),
+     xlab="x", ylab="EOFs [dimensionless]", 
+     main="EOF4 error (black) vs Exact EOF3 (Orange)",
+     col="blue",
+     cex.lab=1.4, cex.axis=1.4, cex.main=1.4)
+legend(0.2,0.37, bty = "n", cex=1.4, text.col = 'blue',
+       lwd=1.2,legend="Sample EOF4",col="blue")
+lines(x, eof(k,x), col='red')
+legend(0.2,0.41, bty = "n", cex=1.4, text.col = 'red',
+       lwd=1.2,legend="True EOF4",col="red")
+lines(x,svdda$u[,k] - eof(k,x), lwd=2, col='black'  )
+legend(0.2,0.33, bty = "n", cex=1.4, text.col = 'black',
+       lwd=2,legend="Sample EOF4 - True EOF4",col="black")
+lines(x, -eof(3,x), col='orange')
+legend(0.2,0.29, bty = "n", cex=1.4, text.col = 'orange',
+       lwd=1.2,legend="True EOF3",col="orange")
+
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 6.7: R Code for 2D Sample EOFs
+```{r}
+library(mvtnorm)
+dmvnorm(x=c(0,0))
+M=100
+N=100
+Mode=5
+
+#Generate PCs
+lam=c(10.0, 9.0, 4.1, 4.0, 2.0)
+univar =diag(rep(1,Mode))
+zeromean = rep(0, Mode)
+rs <- rmvnorm(M, zeromean, univar)
+dim(rs)
+#[1] 100    5
+t <- seq(0, len=M)
+a51 <-rs[,1]*sqrt(1/M)
+pcm=matrix(0, nrow=M, ncol=Mode)
+for(m in 1:Mode){pcm[,m] = rs[,m]*sqrt(1/M)} 
+dim(pcm)
+#[1] 100   5
+
+#Generate true EOFs
+eof <- function(n, x, y){(outer(sin(n*x),sin(n*y)))*(2/N)}
+#eof <- function(n, x, y){outer(sin(n*x),sin(n*y))}
+x = y <- seq(0,pi,len=100)
+sum((eof(2,x, y))^2) #verify the normality
+#[1] 0.9801
+
+#Plot true EOF1 2D
+png(file="fig0607a.png", width=200,height=200)
+par(mar=c(2,2,0.5,0.5))
+contour(x,y, eof(1,x,y))
+text(1.5,1.5, 'EOF1', cex=2)
+dev.off()
+
+eofm <- matrix(0, nrow=N^2, ncol=Mode)
+for (m in 1:Mode){eofm[,m]=c(eof(n=m,x,y))}
+dim(eofm)
+#[1] 10000   5 #10000 = 100*100
+t(eofm)%*%eofm 
+#approximately equal to I5 an identify matrix
+
+#Generate the random data with given EOFs
+Lam = diag(sqrt(lam))
+da <- eofm%*%Lam%*%t(pcm)
+dim(da)
+#[1] 10000   100
+svdda <- svd(da)
+
+#Plot ssample EOF1-5 2D: R=100
+#png(file="fig0607n.png", width=200,height=200)
+par(mar=c(2,2,0.5,0.5))
+k=5
+contour(x,y, matrix(svdda$u[,k], ncol=100), 
+        cex.lab=1.4, cex.main=1.4)
+text(1.5,1.5, 'EOF5', cex=2)
+#dev.off()
+```

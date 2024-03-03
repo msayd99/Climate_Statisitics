@@ -1,0 +1,740 @@
+---
+title: "&nbsp;"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<center><h1>Statistics and Data Visualizations in Climate Science</h1></center>
+<center><h1>with R and Python</h1></center>
+<p>&nbsp;</p>
+<center><h3>A Cambridge University Press Book by</h3></center>
+<center><h3>SSP Shen and GR North</h3></center>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<div align="center">Version 1.0 released in July 2023 and coded by Dr. Samuel Shen, Distinguished Professor</div>
+<div align="center">San Diego State University, California, USA</div> 
+<div align="center"><https://shen.sdsu.edu></div> 
+<div align="center">Email: <sshen@sdsu.edu></div> 
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+## Chapter 3: Estimation and Decision Making
+
+### Plot Fig. 3.1: R code
+```{r}
+#Simulation of the standard error of mean
+#setwd("/Users/sshen/climstats")
+#setEPS() # save the .eps figure file to the working directory
+#postscript("fig0301.eps", height = 5, width = 10)
+mu = 0; sig = 10; m=10000; n = 100; k = m*n
+x = rnorm(k, mean = mu, sd = sig)
+par(mar = c(4, 4.5, 2, 1.5))
+par(mfrow=c(1,2))
+hist(x, breaks = 201, xlim = c(-40,40),
+     main = expression('Histogram of x: sd(x) = 10'),
+     cex.lab = 1.5, cex.axis = 1.5,
+     cex.main = 1.5)
+text(-25, 19000, '(a)', cex =1.3)
+xmat = matrix(x, ncol = n)
+xbar = rowMeans(xmat)
+hist(xbar, breaks = 31, xlim = c(-40,40),
+     xlab = expression(bar(x)),
+     main = expression('Histogram of '*bar(x)* 
+                         ': sd('*bar(x)*') = 1'),
+     cex.lab = 1.5, cex.axis = 1.5,
+     cex.main = 1.5)
+text(-25, 750, '(b)', cex =1.3)
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### Verification of 95% CI by Numerical Simulation
+```{r}
+m=10000 #10,000 experiments
+x = 1:m
+n = 30 #sample size n
+truemean = 8
+da = matrix(rnorm(n*m, mean = truemean, sd = 1), nrow = m)
+esmean = rowMeans(da) #sample mean
+library(matrixStats)
+essd = rowSds(da) #sample SD
+upperci = esmean + 1.96*essd/sqrt(n) #interval upper limit
+lowerci = esmean - 1.96*essd/sqrt(n) #interval lower limit
+l=0
+for(k in 1:m){
+  if(upperci[k] >= truemean & lowerci[k] <= truemean )
+    l=l+1
+} #Determine if the true mean is inside the interval
+l/m #Percentage of truth
+#[1] 0.9425 #which is approximately 0.95
+
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 3.2: R code
+```{r}
+#Plot confidence intervals and tail probabilities
+#setwd("/Users/sshen/climstats")
+#setEPS() # save the .eps figure file to the working directory
+#postscript("fig0302.eps", height = 4.5, width = 6.5)
+par(mar=c(2.5,3.5,2.0,0.5))
+rm(list=ls())
+par(mgp=c(1.4,0.5,0))
+curve(dnorm(x,0,1), xlim=c(-3,3), lwd=3,
+      main='Confidence Intervals and Confidence Levels',
+      xlab="True mean as a normally distributed random variable", 
+      ylab="", xaxt="n", cex.lab=1.2) 
+title(ylab='Probability density', line=2, cex.lab=1.2)
+polygon(c(-1.96, seq(-1.96,1.96,len=100), 1.96),
+        c(0,dnorm(seq(-1.96,1.96,len=100)),0),col='skyblue')
+polygon(c(-1.0,seq(-1.0, 1, length=100), 1),
+        c(0, dnorm(seq(-1.0, 1, length=100)), 0.0),col='white')
+polygon(c(-3.0,seq(-3.0, -1.96, length=100), -1.96),
+        c(0, dnorm(seq(-3.0, -1.96, length=100)), 0.0),col='red')
+polygon(c(1.96,seq(1.96, 3.0, length=100), 3.0),
+        c(0, dnorm(seq(1.96, 3.0, length=100)), 0.0),col='red')
+points(c(-1,1), c(0,0), pch=19, col="blue")
+points(0,0, pch=19)
+points(c(-1.96,1.96),c(0,0),pch=19, col="red")
+text(0,0.02, expression(bar(x)), cex=1.0)
+text(-1.50,0.02, "SE", cex=1.0)
+text(-0.60,0.02, "SE", cex=1.0)
+text(1.50,0.02, "SE", cex=1.0)
+text(0.60,0.02, "SE", cex=1.0)
+text(0,0.2, "Probability 
+     = 0.68")
+arrows(-2.8,0.06,-2.35,0.01, length=0.1)
+text(-2.5,0.09, "Probability
+     =0.025") 
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Code for Edmonton Jan 1880-1929 Temp Statistics
+```{r}
+#setwd('/Users/sshen/climstats')
+da1 =read.csv("data/Lat52.5_Lon-112.5.csv", header=TRUE)
+dim(da1)
+#[1] 1642    3 #1642 months: Jan 1880 - Oct 2016
+da1[1:2,]
+#        Date   Value
+#1 1880-01-01 -7.9609
+#2 1880-02-01 -4.2510
+jan = seq(1, 1642, by=12)
+Tjan = da1[jan,]
+TJ50 = Tjan[1:50, 3]
+xbar = mean(TJ50)
+sdEdm = sd(TJ50)
+EM = 1.96*sdEdm/sqrt(50) 
+CIupper = xbar + EM
+CIlower = xbar - EM
+round(c(xbar, sdEdm, EM, CIlower, CIupper), digits =2)
+#[1] -2.47  4.95  1.37 -3.84 -1.10
+```
+
+<p>&nbsp;</p>
+### Plot Fig. 3.3: R code
+```{r}
+#52.5N, 112.5W, Edmonton, NOAAGlobalTemp Version 3.0
+#setwd("/Users/sshen/climstats")
+#setEPS() # save the .eps figure file to the working directory
+#postscript("fig0303.eps", height = 7, width = 10)
+da1 =read.csv("data/Lat52.5_Lon-112.5.csv", header=TRUE)
+jan =seq(1, 1642, by=12)
+Tjan = da1[jan,]
+t=1880:2016
+regJan = lm(Tjan[,3] ~ t)
+par(mar=c(3.6,4.5,2,1.3), mgp = c(2.3, 0.9, 0))
+plot(t, Tjan[,3], type="l",
+     main = "Edmonton January Surface Air Temperature Anomalies",
+     xlab = "Time: 1880-2016", 
+     ylab = expression("Temperature Anomaly:"~degree~C),
+     ylim=c(-20,10), cex.lab=1.4, cex.axis=1.4)
+m19972006 = mean(Tjan[118:137, 3]) #1997--2016 Jan mean
+m18801929 = mean(Tjan[1:50, 3]) #1880--1929 Jan mean
+EM = 1.96*sd(Tjan[1:50, 3])/sqrt(50)
+lines(t, rep(0,length(t)), lty = 2)
+lines(t[118:137], rep(m19972006, 20), 
+      col = 'blue', lwd = 3, lty = 1)
+lines(t[1:50], rep(m18801929, 50), 
+      col = 'darkgreen', lwd = 3, lty = 1)
+lines(t[1:50], rep(m18801929 - EM, 50), 
+      col = 'darkgreen', lwd = 1.5, lty = 3)
+lines(t[1:50], rep(m18801929 + EM, 50), 
+      col = 'darkgreen', lwd = 1.5, lty = 3)
+abline(regJan, col='red', lwd = 2)
+text(1920, 9, 
+     expression("Linear trend: 3.78"~degree~C~"per century"), 
+     col="red", cex=1.4) 
+text(2005, -17, 
+     paste('1997-2016', '\nmean = ', 
+           round({m19972006}, digits = 2)),
+     col = 'blue', cex = 1.4)
+text(1905, -17, 
+     paste('1880-1929', '\nmean = ', 
+           round({m18801929}, digits = 2)),
+     col = 'darkgreen', cex = 1.4)
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 3.4: R code
+```{r}
+#setwd("/Users/sshen/climstats")
+#setEPS() # save the .eps figure file to the working directory
+#postscript("fig0304.eps", height = 7, width = 10)
+x = seq(-3,6, len=1000)
+par(mar=c(0.5,0,2.5,0.0))
+plot(x, dnorm(x,0,1), type="l",
+     lwd=2, bty='n',
+     main='Probability Density Functions of 
+Null and Alternative Hypotheses for Inference',
+     xlab='', ylab='',
+     xaxt="n",yaxt="n",
+     cex.lab=1.2, ylim=c(-0.05,0.6)) 
+lines(x, dnorm(x,2.5,1), 
+      lwd=2, lty=2,
+      type="l", col='blue')
+segments(-3,0, 6,0)
+#lines(c(-3,6),c(0,0))
+polygon(c(2.0,seq(2.0, 4, length=100), 4),
+        c(0, dnorm(seq(2, 4, length=100)), 0.0),col='pink')
+arrows( 2.6,0.08, 2.25,0.015, length=0.2, angle=8, 
+        lwd=2, col='red')
+text(3.5,0.09,expression(alpha*": Significance level"), 
+     col='red', cex=1.4)
+polygon(c(-1,seq(-1, 2, length=100), 2),
+        c(0, dnorm(seq(-1, 2, length=100), 2.5,1), 0),
+        col='lightblue')
+lines(x, dnorm(x,0,1), type="l") 
+text(1.5,0.05,expression(beta), col='blue', cex=1.5)
+segments(2,-0.05,2,0.6, col='red')
+points(2,0, col='red', pch=16)
+text(1.3,-0.06, expression("Critical value "*x[c]), 
+     cex=1.4, col='red')
+segments(0,0, 0,0.5, lty=3, lwd=1.5)
+segments(2.5,0, 2.5,0.5, lty=3, lwd=1.5, col='blue')
+lines(x, dnorm(x,0,1), type="l") 
+arrows( 3.0,0.038, 2.7,0.005, length=0.2, angle=8, 
+        lwd=2, col='blue')
+text(3.2,0.05,"p-value", col='blue', cex=1.5)
+points(2.5,0, col='blue', pch=16)
+text(-1.3,0.55, "Probability density 
+function of the  
+H0 distribution", cex=1.4)
+text(4,0.55, "Probability density 
+function of the test statistic 
+when H1 is true", cex=1.4, col='blue')
+text(3,-0.03, expression("Statistic "*x[s]), 
+     cex=1.4, col='blue')
+arrows( 2.0,0.45, 6,0.45, length=0.2, angle=10, 
+        lwd=1.5, col='blue', code=3)
+text(4,0.42, expression("Accept"~H[1]), 
+     cex=1.4, col='blue')
+arrows( -2,0.45,2.0,0.45,  length=0.2, angle=10, 
+        lwd=1.5, code=3)
+text(1,0.42, expression("Accept"~H[0]), cex=1.4)
+text(-0.5,0.09, expression(1- alpha *": Confidence level"), 
+     col='grey40', cex=1.4)
+text(3,0.17, expression(1-beta*': Power'), 
+     col='darkgreen', cex=1.4)
+arrows(0,0.49, 2.5,0.49, length=0.2, angle=20, 
+       lwd=1.5, col='maroon', code=3)
+text(1.3,0.52, "Difference",  col='maroon', cex=1.4)
+text(0,-0.04,expression(mu[0]),  cex=1.6)
+#dev.off()
+
+```
+
+
+<p>&nbsp;</p>
+### Edmonton 1997-2016 Hypothesis Testing Example
+```{r}
+#setwd("/Users/sshen/climstats")
+da1 =read.csv("data/Lat52.5_Lon-112.5.csv", header=TRUE)
+jan =seq(1, dim(da1)[1], by=12) #Jan indices
+Tjan = da1[jan,] #Jan data matrix
+da3=Tjan[118:137, 3] #1997--2016 data string
+xbar = mean(da3); s = sd(da3); EM = 1.96*s/sqrt(20)
+round(c(xbar, s, EM, xbar - EM, xbar + EM), digits = 2)
+#[1] 1.53 2.94 1.29 0.24 2.83
+mean(da3)/(sd(da3)/sqrt(20))
+#[1] 2.331112 #t-statistic xs
+1 - pt(2.331112, 19)
+#[1] 0.01545624  less than the significance level 0.05
+
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 3.5: R code
+```{r}
+#AR(1) process and its simulation
+#setwd("/Users/sshen/climstats")
+#setEPS() # save the figure to an .eps file 
+#postscript("fig0305.eps", height = 8, width = 10)
+par(mar=c(4.0,4.5,2,1.0))
+par(mfcol = c(2, 2))
+
+lam=0.9; alf=0.25; y0=4 #AR1 process parameters
+#install.packages('forecast')
+library(forecast) #Load the forecast package
+#set.seed(1234)
+n <- 1000 #Generate an AR1 process of length n 
+x <- rep(0,n)
+w <- rnorm(n)
+x[1] <- y0
+# loop to create time series x
+for (t in 2:n) x[t] <- lam * x[t-1] + alf * w[t]
+par(mar=c(4.5,4.5,2,0.5))
+plot(201:400, x[201:400],type='l', 
+     xlab="Time", ylab="x", 
+     main=expression("AR(1) Time Series: " * rho *"=0.9"),
+     cex.lab=1.8, cex.axis=1.8, cex.main=1.6)
+text(15,3.5, "(a)", cex=1.8)
+
+#Calculate the auto-correlation
+M <- 10
+rho <- rep(0,M)
+for (m in 1:M){
+  rho[m]=cor(x[1:(n-m)],x[(1+m):n])
+}
+par(mar=c(4.5,4.5,2,0.5))
+plot(rho, type='p', ylim=c(0,1), 
+     xlab="Time lag", 
+     ylab="Auto-correlation",
+main=expression("Lagged auto-correlation: " * rho *"=0.9"),
+     lwd=1.8, cex.lab=1.8, cex.axis=1.8, cex.main=1.6)
+text(2,0.95, "(c)", cex=1.8)
+
+rhotheory <- rep(0,M) #Theoretical auto-correlation
+for (m in 1:M){rhotheory[m]=lam^m}
+points(rhotheory, col="blue", pch=3, lwd=3)
+
+#AR1 process for rho = 0.6
+lam=0.6; alf=0.25; y0=4
+n <- 1000; x <- rep(0,n); w <- rnorm(n); x[1] <- y0
+
+# loop to create time series x
+for (t in 2:n) x[t] <- lam * x[t-1] + alf * w[t]
+par(mar=c(4.5,4.5,2,0.5))
+plot(201:400, x[201:400],type='l', 
+     xlab="Time", ylab="x", 
+main=expression("AR(1) Time Series: " * rho *"=0.6"),
+     cex.lab=1.8, cex.axis=1.8, cex.main=1.6)
+text(15,3.5, "(b)", cex=1.8)
+
+#Calculate the auto-correlation
+M <- 10
+rho <- rep(0,M)
+for (m in 1:M){
+  rho[m]=cor(x[1:(n-m)], x[(1+m):n])
+}
+par(mar=c(4.5,4.5,2,0.5))
+plot(rho, type='p', ylim=c(0,1), 
+     xlab="Time lag", 
+     ylab="Auto-correlation",
+main=expression("Lagged auto-correlation: " * rho *"=0.6"),
+     lwd=1.8, cex.lab=1.8, cex.axis=1.8, cex.main=1.6)
+text(2,0.95, "(d)", cex=1.8)
+
+rhotheory <- rep(0,M) #Theoretical auto-correlation
+for (m in 1:M){rhotheory[m]=lam^m}
+points(rhotheory, col="blue", pch=3, lwd=3)
+#dev.off()
+# Back to the original graphics device
+par(mfrow = c(1, 1))
+
+
+```
+
+
+<p>&nbsp;</p>
+### R plot Fig. 3.6: NOAAGlobalTemp V5 1880-2019
+```{r}
+#setwd("/Users/sshen/climstats")
+da1 =read.table("data/NOAAGlobalTempAnn2019.txt", 
+                header=FALSE) #read data
+dim(da1) 
+#[1] 140   6 #140 years of anomalies data
+da1[1:2,1:5] #column 1: year; column 2: data
+#    V1        V2       V3       V4       V5
+#1 1880 -0.432972 0.009199 0.000856 0.000850
+#2 1881 -0.399448 0.009231 0.000856 0.000877
+da1[139:140,1:5]
+#      V1       V2       V3      V4    V5
+#139 2018 0.511763 0.005803 8.6e-05 2e-06
+#140 2019 0.633489 0.005803 8.6e-05 2e-06
+t=da1[,1]; Tann = da1[,2]
+regAnn = lm(Tann ~ t)
+#setEPS() # save the figure to an .eps file 
+#postscript("fig0306.eps", height = 7, width = 10)
+par(mar=c(4.0,4.5,2,1.0))
+plot(t, Tann, type="l", lwd=2.5,
+main = "NOAA Global Average Annual Mean SAT Anomalies",
+     xlab = "Time", ylab = "Temperature Anomalies [deg C]",
+     cex.lab=1.4, cex.axis=1.4)
+abline(lm(Tann ~t), col='red', lwd=1.3)
+lines(t, rep(0, 140), col='blue')
+lines(t[41:70], rep(mean(Tann[41:70]), 30), 
+      col='green', lwd=4) # 1920-1949 mean
+lines(t[71:100], rep(mean(Tann[71:100]), 30), 
+      col='green', lwd=4) #1950-1979 mean
+lines(t[101:130], rep(mean(Tann[101:130]), 30), 
+      col='green', lwd=4) #1980-2010 mean
+lm(Tann ~t)
+#(Intercept)            t  
+#-14.741366     0.007435
+text(1940, 0.5, 
+     expression("Linear trend 0.74"~degree~C~"per century"),
+     col='red', cex=1.4)
+#0.007435 #0.7 deg C per century
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Code for the 1920-1949 NOAAGlobalTemp Statistics
+```{r}
+#setwd("/Users/sshen/climstats")
+da1 =read.table("data/NOAAGlobalTempAnn2019.txt", 
+                header=FALSE) #read data
+Ta = da1[41:70,2]
+n = 30
+xbar = mean(Ta)
+s = sd(Ta)
+r1 = cor(Ta[1:29], Ta[2:30])
+neff = n*(1 - r1)/(1 + r1)
+neff = 4 #[1] 3.677746 approximately equal to 4
+print(paste('rho =', round(r1, digits =2), 
+            'neff =', round(neff, digits =2)))
+#[1] "rho = 0.78 neff = 4"
+tc0 = qt(0.975, 29, lower.tail=TRUE)#dof of t is 30 - 1
+tc = qt(0.975, 3, lower.tail=TRUE)#dof of t is neff -1 
+CI1 = xbar - tc0*s/sqrt(n); CI2 = xbar + tc0*s/sqrt(n)
+CI3 = xbar - tc*s/sqrt(neff); CI4 = xbar + tc*s/sqrt(neff)
+round(c(xbar, s, r1, CI1, CI2, CI3, CI4, tc), digits = 2)
+#[1] -0.38  0.16  0.78 -0.44 -0.32 -0.63 -0.13  3.18
+
+```
+
+
+<p>&nbsp;</p>
+### R Code for the 1920-1949 NOAAGlobalTemp Statistics
+#### Old version code for the CIs:
+```{r}
+#Old version code for the CIs not included in the book: 
+#R code for the 1920-1949 NOAAGlobalTemp statistics
+#setwd("/Users/sshen/climstats")
+da1 =read.table("data/NOAAGlobalTempAnn2019.txt", 
+                header=FALSE) #read data
+Ta = da1[41:70,2]
+n = 30
+xbar = mean(Ta)
+s = sd(Ta)
+r1 = cor(Ta[1:29], Ta[2:30])
+neff = n*(1 - r1)/(1 + r1)
+neff #[1] 3.677746 approximately equal to 4
+neff = 4
+CI1 = xbar - s/sqrt(n); CI2 = xbar + s/sqrt(n)
+CI3 = xbar - s/sqrt(neff); CI4 = xbar + s/sqrt(neff)
+print(paste('rho =', round(r1, digits =2), 
+            'neff =', round(neff, digits =2)))
+#[1] "rho = 0.78 neff = 4"
+tc = qt(0.975, 4, lower.tail=TRUE)
+round(c(xbar, s, r1, CI1, CI2, CI3, CI4, tc), digits = 2)
+#[1] -0.38  0.16  0.78 -0.41 -0.35 -0.46 -0.30  2.78
+
+#dof of t is n_eff - 1 =3
+tc0 = qt(0.975, 29, lower.tail=TRUE)
+tc = qt(0.975, 3, lower.tail=TRUE)
+CI1 = xbar - tc0*s/sqrt(n); CI2 = xbar + tc0*s/sqrt(n)
+CI3 = xbar - tc*s/sqrt(neff); CI4 = xbar + tc*s/sqrt(neff)
+round(c(xbar, s, r1, CI1, CI2, CI3, CI4, tc), digits = 2)
+#[1] -0.38  0.16  0.78 -0.44 -0.32 -0.63 -0.13  3.18
+##Done with the CI computing. The old CI code ends here. 
+```
+
+
+<p>&nbsp;</p>
+### R code for the 1950-1979 and 1980-2009 Statistics
+```{r}
+#  The 1950-1979 NOAAGlobalTemp statistics
+Ta = da1[71:100,2] #1950-1979
+n = 30
+xbar = mean(Ta)
+s = sd(Ta)
+r1 = cor(Ta[1:29], Ta[2:30])
+neff = n*(1 - r1)/(1 + r1)
+neff #[1] 19.02543 approximately equal to 19
+neff = 19
+round(c(xbar, s, r1, neff), digits = 2)
+#[1] -0.29  0.11  0.22 19.00
+
+```
+
+
+<p>&nbsp;</p>
+### The 1980-2009 NOAAGlobalTemp Statistics
+```{r}
+Ta = da1[101:130,2]#1980-2009
+n = 30
+xbar = mean(Ta)
+s = sd(Ta)
+r1 = cor(Ta[1:29], Ta[2:30])
+neff = n*(1 - r1)/(1 + r1)
+neff #[1] 4.322418 approximately equal to 4
+neff = 4
+round(c(xbar, s, r1, neff), digits = 2)
+#[1] 0.12 0.16 0.75 4.00
+```
+
+
+<p>&nbsp;</p>
+### t-Statistic for 1950-1979 and 1980-2009 Difference
+```{r}
+ts = (-0.29 - 0.12)/sqrt(0.11^2/19 + 0.16^2/4)
+ts  #[1] -4.887592
+```
+
+
+<p>&nbsp;</p>
+### Chi-square test for Dodge City, Kansas, USA
+```{r}
+((9-15)^2)/15+ ((6-7)^2)/7 + ((16-9)^2)/9
+#7.987302 #This is the Chi-statistic
+1 - pchisq(7.987302, df=2)  #Compute the tail probability
+#[1] 0.01843229 #p-value
+1 - pchisq(5.99, df=2) #Compute the tail probability
+#[1] 0.05003663 # Thus, xc = 5.99
+```
+
+
+<p>&nbsp;</p>
+### R: Omaha monthly precipitation and Gamma
+```{r}
+#Read the Omaha monthly precipitation data
+#setwd("/Users/sshen/climstats")
+Omaha=read.csv("data/OmahaP.csv", header=TRUE)
+dim(Omaha)
+#[1] 864   7  : Jan 1948-Dec 2019: 864 months, 72 years*12
+daP = matrix(Omaha[,7], ncol=12, byrow=TRUE)
+y = daP[,6] #Omaha June precipitation data 
+#Fit the data
+#install.packages('fitdistrplus')
+library(fitdistrplus)
+omahaPfit = fitdist(y, distr = "gamma", method = "mle")
+summary(omahaPfit)
+#        estimate  Std. Error
+#shape 1.51760921 0.229382819
+#rate  0.01889428 0.003365757
+```
+
+
+
+<p>&nbsp;</p>
+### Plot the figure: Fig. 3.7
+```{r}
+#setEPS() # save the .eps figure 
+#postscript("fig0307.eps", height = 5.6, width = 8)
+par(mar=c(4.2,4.2,2.5,4.5))
+hist(y, breaks= seq(0,300,by=25),
+     xlim=c(0,300), ylim=c(0,20),
+     main="Histogram and Its Fitted Gamma Distribution 
+     for Omaha June Precip: 1948-2019", 
+     xlab="Precipitation [mm]", cex.lab=1.4, cex.axis=1.4)
+par(new=TRUE)
+density = function(y) dgamma(y, shape=1.5176, rate=0.0189)
+plot(y, density(y), col="blue",
+     pch=20, cex=0.5, ylim=c(0,0.01),
+     axes=FALSE, bty="n", xlab="", ylab="")
+axis(4, cex.axis=1.4, col='blue', col.axis='blue')
+mtext("Gamma Density", cex=1.4,
+      side = 4, line = 3, col="blue")
+text(140, 0.009, cex=1.4, col="blue",
+     "Gamma: Shape=1.5176, Rate=0.0189")
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R code: Chi-square Test for the Goodness of Fit: Omaha prcp
+```{r}
+#setwd("/Users/sshen/climstats")
+Omaha=read.csv("data/OmahaP.csv", header=TRUE)
+dim(Omaha)
+#[1] 864   7  : Jan 1948-Dec 2019: 864 months, 72 years*12
+daP = matrix(Omaha[,7], ncol=12, byrow=TRUE)
+y = daP[,6] #Omaha June precipitation data 
+n = 72 #Total number of observations
+m = 12 #12 bins for the histogram in [0, 300] mm
+p1 = pgamma(seq(0,300, by=300/m), 
+            shape=1.5176, rate=0.0189)
+p1[m+1] = 1
+p2 = p1[2:(m+1)]-p1[1:m]
+y # The 72 years of Omaha June precipitation
+cuts = cut(y, breaks = seq(0,300,by=300/m))
+#The cut function in R assigns values into bins
+Oi <- c(t(table(cuts))) #Extract the cut results
+Ei = round(p2*n, digits=1) #Theoretical results
+rbind(Oi, Ei)
+# [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12]
+#Oi 9 17.0 16.0  7.0  8.0  5.0  5.0  1.0  2.0   1.0   1.0  0.0
+#Ei13 15.6 12.8  9.5  6.8  4.7  3.2  2.1  1.4   0.9   0.6  1.2
+sum(((Oi - Ei)^2)/Ei)
+#[1] 6.350832 #Chi-square statistic
+1 - pchisq(19.68, df=11) #Compute the tail probability
+#[1] 0.04992718 # Thus, xc = 19.68
+1 - pchisq(6.3508, df=11) #Compute the tail probability
+#[1] 0.8489629 #p-value
+
+```
+
+
+<p>&nbsp;</p>
+### K-S test for a set of generated data from N(0,1): R code
+```{r}
+x = rnorm(60)
+ks.test(x, "pnorm", mean=0, sd=1)
+#D = 0.10421, p-value = 0.4997 
+#The large p-value implies no significant difference
+
+#K-S test of uniformly distributed data vs N(0,1) population
+u = runif(60)
+ks.test(u, "pnorm", mean=0, sd=1)
+#D = 0.50368, p-value = 1.366e-14
+#The small p-value implies significant difference
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 3.8: K-S test and R code
+```{r}
+#setEPS() # save the .eps figure 
+#postscript("fig0308.eps", height = 5.6, width = 8)
+par(mar=c(4.2,4.5,2.5,4.5))
+#setwd("/Users/sshen/climstats")
+da1 =read.csv("data/EdmontonT.csv", header=TRUE)
+x=da1[,3]
+m1 = mean(x)
+s1 = sd(x)
+xa = (x- m1)/s1
+ks.test(xa, "pnorm", mean=0, sd=1)
+#Dn = 0.074186, p-value = 2.829e-08 => significant difference
+plot(ecdf(xa), pch =3,
+     xlim=c(-5,5),ylim=c(0,1),
+  main="Cumulative Distributions: Data vs Model", 
+  xlab=expression(paste('Temperature Anomalies [',degree,'C]')), 
+  ylab=expression(paste(F[obs],': Percentile/100')),
+  cex.lab=1.4, cex.axis=1.4)
+par(new=TRUE)
+x=seq(-5,5, by=0.1)
+lines(x,pnorm(x), col='blue')
+axis(4, cex.axis=1.4, col='blue', 
+     col.axis='blue')
+mtext(expression(paste(F[exp],': CDF of N(0,1)')), 
+      cex=1.4, side = 4, line = 3, col="blue")
+text(2, 0.05, cex=1.4, col="red",
+     expression(paste('K-S test: ', D[n], 
+                     '= 0.0742, p-value' %~~% '0' )))
+text(2, 0.22, cex=1.4, col="red",
+     expression(paste(D[n], '= max|', 
+                      F[obs] -F[exp], '|')))
+m=46
+segments(x[m],pnorm(x[m]), 
+         x[m],pnorm(x[m])- 0.0742,
+         lwd=2, col='red')
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R: K-S Test for Omaha June Precip vs Gamma 
+```{r}
+Omaha=read.csv("data/OmahaP.csv", header=TRUE)
+daP = matrix(Omaha[,7], ncol=12, byrow=TRUE)
+y = daP[,6] #June precipitation 1948-2019
+#install.packages('fitdistrplus')
+library(fitdistrplus)
+omahaPfit = fitdist(y, distr = "gamma", method = "mle")
+#shape 1.51760921, rate  0.01889428
+ks.test(y, "pgamma", shape = 1.51760921, rate= 0.01889428)
+#D = 0.066249, p-value = 0.8893 #y is the Omaha data string
+#You may verify the K-S statistic using another command
+#install.packages('fitdistrplus')
+library(fitdistrplus)
+gofstat(omahaPfit) 
+#Kolmogorov-Smirnov statistic  0.06624946 
+```
+
+
+<p>&nbsp;</p>
+### Plot Fig. 3.9: Sensitive to outliers and R code
+```{r}
+#setEPS() # save the .eps figure 
+#postscript("fig0309.eps", height = 5.6, width = 8)
+#setwd("/Users/sshen/climstats")
+par(mar=c(4,4,0.5,0.5))
+x = c(0.2*runif(50),1)
+y = c(0.2*runif(50),1)
+plot(x,y, pch=19, cex=0.5,
+     cex.axis =1.6, cex.lab = 1.6)
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### #t-Statistic
+```{r}
+n=51
+r = cor(x, y)
+t=r*(sqrt(n-2))/sqrt(1-r^2)
+t
+#[1] 10.19999
+qt(0.975, df=49)
+#[1] 2.009575 #This is critical t value
+1 - pt(10.19999, df=49)
+#[1] 5.195844e-14 # a very small p-value
+
+```
+
+
+<p>&nbsp;</p>
+### R code for Kendall tau Test
+```{r}
+#install.packages("Kendall") 
+library(Kendall)
+x = c(0.2*runif(50),1)
+y = c(0.2*runif(50),1)
+Kendall(x,y) 
+#tau = 0.114, 2-sided pvalue =0.24216
+```
+
+
+<p>&nbsp;</p>
+### R code for Mann-Kendall Test: Edmonton Data
+```{r}
+#setwd("/Users/sshen/climstats")
+#Read Edmonton data from the gridded NOAAGlobalTemp
+da1 =read.csv("data/EdmontonT.csv", header=TRUE)
+x=da1[,3]
+m1 = mean(x)
+s1 = sd(x)
+xa = (x- m1)/s1 #standardized anomalies
+#install.packages('Kendall')
+library(Kendall)
+summary(MannKendall(xa))
+#Score =  206254 , Var(Score) = 492349056
+#tau = 0.153, 2-sided pvalue =< 2.22e-16
+
+```

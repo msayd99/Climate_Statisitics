@@ -1,0 +1,468 @@
+---
+title: "&nbsp;"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<center><h1>Statistics and Data Visualizations in Climate Science</h1></center>
+<center><h1>with R and Python</h1></center>
+<p>&nbsp;</p>
+<center><h3>A Cambridge University Press Book by</h3></center>
+<center><h3>SSP Shen and GR North</h3></center>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<div align="center">Version 1.0 released in July 2023 and coded by Dr. Samuel Shen, Distinguished Professor</div>
+<div align="center">San Diego State University, California, USA</div> 
+<div align="center"><https://shen.sdsu.edu></div> 
+<div align="center">Email: <sshen@sdsu.edu></div> 
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+## Chapter 8: Spectral Analysis and Filtering of Time Series
+
+### R Plot Fig. 8.1: Waves of Different Amplitudes, Periods and Phases
+```{r}
+#setwd("~/climstats")
+#setEPS()
+#postscript("fig0801.eps", height=6, width=10)
+par(mar = c(4.5, 4.5, 2.5, 0.5))
+par(mfrow=c(2,2))
+t = seq(0, 2, len = 1000)
+y1 = sin(2*pi*t) #A=1, tau=1, phi=0
+y2 = sin(2*pi*t/0.5) #A=1, tau=0.5, phi=0
+y3 = 0.5*sin(2*pi*t  - pi/2) #A=0.5, tau=1, phi=0
+y4 = 0.5*sin(2*pi*t/0.5 + pi/6) #A=0.5, tau=1, phi=pi/6
+plot(t, y1, 
+     type = 'l', lwd = 2,
+     xlab = " ", ylab = "T(t)",
+     cex.lab =1.5, cex.axis = 1.5,
+     cex.main = 1.5,
+     main=expression(paste(
+       'Function T(t): A=1, ', tau, '=1, ', phi,'=0')))
+plot(t, y2, 
+     type = 'l', lwd = 2,
+     xlab = " ", ylab = "T(t)",
+     cex.lab =1.5, cex.axis = 1.5,
+     cex.main = 1.5, col = 'red',
+     main=expression(paste(
+       'Function T(t): A=1, ', tau, '=0.5, ', phi,'=0')))
+plot(t, y3, 
+     type = 'l', lwd = 2,
+     xlab = "Time t", ylab = "T(t)",
+     cex.lab =1.5, cex.axis = 1.5,
+     cex.main = 1.5, col = 'blue',
+     main=expression(paste(
+       'Function T(t): A=0.5, ', tau, '=1, ', phi,'=', - pi/2)))
+plot(t, y4, 
+     type = 'l', lwd = 2,
+     xlab = "Time t", ylab = "T(t)",
+     cex.lab =1.5, cex.axis = 1.5,
+     cex.main = 1.5, col = 'purple',
+     main=expression(paste(
+       'Function T(t): A=0.5, ', tau, '=0.5, ', phi,'=', pi/6)))
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 8.2: Wave Superposition
+```{r}
+#setEPS()
+#postscript("fig0802.eps", height=6, width=10)
+par(mar = c(4.5, 4.8, 2.5, 0.5))
+plot(t, y1 + y2 + 2*y3 + y4, 
+     type = 'l', lwd = 4,
+     xlab = "Time t", ylab = "T(t)",
+     cex.lab =1.5, cex.axis = 1.5,
+     cex.main = 1.5, col = 'blue',
+     main='Superposition of several harmonics')
+#dev.off()
+```
+
+
+
+<p>&nbsp;</p>
+### R Code for the Discrete Sine Transform (DST)
+```{r}
+M = 5
+time = 1:M - 1/2
+freq = 1:M - 1/2
+time_freq = outer(time, freq)
+#Construct a sine transform matrix
+Phi = sqrt(2/M)*sin((pi/M)*time_freq)
+#Verify Phi is an orthogonal matrix
+round((t(Phi)%*%Phi), digits = 2)
+#The output is an identity matrix
+
+ts = time^2  #Given time series data
+ts
+#[1]  0.25  2.25  6.25 12.25 20.25
+ts_dst = t(Phi)%*%ts #DST transform
+Recon = Phi%*%ts_dst #inverse DST 
+t(Recon) #Verify Recon = ts
+#[1,] 0.25 2.25 6.25 12.25 20.25
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 8.3: Polar Expression of a Complex Number
+```{r}
+#setwd("~/climstats")
+#setEPS()
+#postscript("fig0803.eps", height=5.5, width=5.5)
+par(mar = c(0,0,0,0))
+r=10
+bb=1.5*r
+t=seq(0, 2*pi, length=200)
+x=r*cos(t)
+y=r*sin(t)
+plot(x,y,type="l", lwd=3, asp=1, 
+     xlim=c(-bb + 3, bb),ylim=c(-bb + 3, bb),
+     xaxt="n",yaxt="n",ann=FALSE,bty="n")
+aa=1.4*r
+x1=r*cos(pi/3)
+y1=r*sin(pi/3)
+arrows(c(-aa + 2, 0), c(0, -aa + 2), c(aa,0), c(0, aa), 
+       length=0.1, code=2, lwd=2)
+arrows(0,0,0.98*x1,0.98*y1, 
+       length=0.15,code=2, lwd=1, angle=15)
+t2=seq(0,pi/3,length=10)
+x2=0.22*r*cos(t2)
+y2=0.22*r*sin(t2)
+lines(x2,y2, type="l")
+points(x1,y1,pch=19,cex=1)
+segments(x1,0, x1,y1)
+text(1.1*r,0.1*r, "1", cex=1.3)
+text(-0.1*r, 1.1*r, "i", cex=1.5)
+text(1.2*x1,1.1*y1, "(x,y)", cex=1.3)
+text(0.3*r,-0.1*r, expression(paste(cos,theta)), 
+     cex=1.3)
+text(1.35*x1,0.5*y1, expression(paste(sin,theta)), 
+     cex=1.3)
+text(1.35*r,-0.1*r, "Real Axis", cex=1.3)
+text(0.5*r, 1.35*r, "Imaginary Axis", cex=1.3)
+text(-0.1*r, -0.1*r, "0", cex=1.5)
+text(0.3*r*cos(pi/6),0.3*r*sin(pi/6), 
+     expression(paste(theta)), cex=1.3)
+text(1.9*x1,1.3*y1, 
+expression(paste(e^{i*theta},"=", "cos",theta,"+ i sin",theta)), 
+     cex=1.5)
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 8.4: The Unitary DFT Matrix
+```{r}
+M = 200
+i  = complex(real = 0, imaginary = 1)
+time_freq = outer(0:(M-1), 0:(M-1))
+U = exp(i*2*pi*time_freq/M) / sqrt(M)
+Ure = Re(U) #Real part of U
+Uim = Im(U) #Imaginary part of U
+
+#setEPS()
+#postscript("fig0804a.eps", height=8.1, width=10)
+par(mar=c(4.2, 5.5, 1.5, 0))
+#Plot the real part
+filled.contour(0:(M-1), 0:(M-1), Ure,
+               color.palette = heat.colors,
+               #     xlab = 't', ylab ='k',
+               plot.axes={
+                 axis(1,cex.axis=1.8)
+                 axis(2,cex.axis=1.8)},
+               plot.title={
+  title(main = '(a) Real Part of the DFT Unitary Matrix',
+                       xlab="t", cex.lab=2, cex.main = 1.5)
+                 mtext("k",2,cex=2,line=4,las=1)
+               },
+               key.axes = axis(4, cex.axis = 2)
+)
+#dev.off()
+#Plot the imaginary part
+#setEPS()
+#postscript("fig0804b.eps", height=8.1, width=10)
+par(mar=c(4.2, 5.5, 1.5, 0))
+#Plot the real part
+filled.contour(0:(M-1), 0:(M-1), Uim,
+               color.palette = rainbow,
+               #     xlab = 't', ylab ='k',
+               plot.axes={
+                 axis(1,cex.axis=1.8)
+                 axis(2,cex.axis=1.8)},
+               plot.title={
+  title(main = '(b) Imaginary Part of the DFT Unitary Matrix',
+                       xlab="t", cex.lab=2, cex.main = 1.5)
+                 mtext("k",2,cex=2,line=4,las=1)
+               },
+               key.axes = axis(4, cex.axis = 2)
+)
+#dev.off()
+
+#setEPS()
+#postscript("fig0804b2.eps", height=8.5, width=10)
+par(mar=c(4, 4.5, 1.5, 0))
+filled.contour(0:(M-1), 0:(M-1), Uim,
+               color.palette = rainbow,
+               xlab = 't', ylab ='k',
+               cex.lab = 1.5, cex.axis = 1.8,
+               main= 'Imaginary Part of the DFT Unitary Matrix')
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R code for DFT and iDFT
+```{r}
+M = 9
+ts = (1:M)^(1/2) #X is ts here
+round(ts, digits = 2)
+#[1]  1.00 1.41 1.73 2.00 2.24 ...
+i  = complex(real = 0, imaginary = 1)
+time_freq = outer(0:(M-1), 0:(M-1))
+U = exp(i*2*pi*time_freq/M) / sqrt(M)
+ts_dft = t(Conj(U))%*%ts #DFT of ts
+ts_rec = U%*%ts_dft #Inverse DFT for reconstruction
+#Verify the reconstruction
+round(t(ts_rec), digits = 2) 
+#[1,] 1+0i 1.41+0i 1.73+0i 2+0i 2.24+0i ...
+```
+
+
+<p>&nbsp;</p>
+### R plot Fig. 8.5: Real and Imaginary of the First Four Harmonics in DFT
+```{r}
+M = 200
+time = 1:200
+i  = complex(real = 0, imaginary = 1)
+time_freq = outer(0:(M-1), 0:(M-1))
+U = exp(i*2*pi*time_freq/M) / sqrt(M)
+Ure = Re(U) #Real part of U
+Uim = Im(U) #Imaginary part of U
+#setEPS()
+#postscript("fig0805.eps", height=6, width=8)
+layout(matrix(c(1,2,3,4,5,6,7,8), 
+              nrow = 4, ncol = 2),
+       heights = c(0.92, 0.7, 0.7, 1.16, 
+                   0.92, 0.7, 0.7, 1.16),
+       widths  = c(4, 3.3) # Widths of the 2 columns
+) 
+par(mar=c(0,5,3,0)) #Zero space between (a) and (b)
+plot(time, Ure[4,], pch =16, cex =0.3, xaxt="n", 
+     yaxt="n", xlab="", ylab="k=3",
+     cex.axis = 1.6,  cex.lab = 1.6,  
+     main ='Real part of DFT harmonics')
+par(mar=c(0,5,0,0))
+plot(time,Ure[3,],pch =16, cex =0.3, xaxt="n", 
+     yaxt="n", xlab="", ylab="k=2",
+     cex.axis = 1.6,  cex.lab = 1.6)
+par(mar=c(0,5,0,0))
+plot(time,Ure[2,], pch =16, cex =0.3, xaxt="n", 
+     yaxt="n", ylim = c(-0.1, 0.1),
+     xlab="", ylab="k=1",
+     cex.axis = 1.6, cex.lab = 1.6)
+par(mar=c(6,5,0,0))
+plot(time,Ure[1,], pch =16, cex =0.3, 
+     xaxt="n", yaxt="n",
+     ylim = c(-0.1, 0.1),
+     xlab="t", ylab="k=0",
+     cex.axis = 1.6,  cex.lab = 1.6)
+axis(1, at = c(0, 50, 100, 150), cex.axis=1.6)
+axis(2, at = c(-0.1, 0, 0.1), cex.axis=1.6)
+
+par(mar=c(0,0,3,1)) #Zero space between (a) and (b)
+plot(time,Uim[4,], pch = 16, cex =0.3, xaxt="n", 
+     yaxt="n", xlab="", ylab="",
+     cex.axis = 1.6,  cex.lab = 1.6,  
+     main ='Imaginary part of DFT harmonics')
+par(mar=c(0,0,0,1))
+plot(time,Uim[3,], pch = 16, cex = 0.3, xaxt="n", 
+     yaxt="n", xlab="", ylab="",
+     cex.axis = 1.6,  cex.lab = 1.6)
+par(mar=c(0,0,0,1))
+plot(time,Uim[2,], pch = 16, cex = 0.3, xaxt="n", 
+     yaxt="n", ylim = c(-0.1, 0.1),
+     xlab="", ylab="",
+     cex.axis = 1.6, cex.lab = 1.6)
+par(mar=c(6,0,0,1))
+plot(time,Uim[1,], pch = 16, cex = 0.3, 
+     yaxt="n", ylim = c(-0.1, 0.1),
+     xlab="t", ylab="",
+     cex.axis = 1.6, cex.lab = 1.6)
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Plot of Figs. 8.6 and 8.7
+```{r}
+library(ncdf4)
+nc=ncdf4::nc_open("/Users/momtaza/Desktop/RClimateStats/data/air.mon.mean.nc")
+Lon <- ncvar_get(nc, "lon")
+Lat1 <- ncvar_get(nc, "lat")
+Time <- ncvar_get(nc, "time")
+library(chron)
+month.day.year(1297320/24,
+               c(month = 1, day = 1, year = 1800)) 
+#1948-01-01
+NcepT <- ncvar_get(nc, "air")
+dim(NcepT)
+#[1] 144 73 878, 
+#i.e., 878 months=1948-01 to 2021-02, 73 years 2 mons
+#Tokyo (35.67N, 139.65E) monthly temperature data 2011-2020
+Lat1[23]
+#[1] 35oN
+Lon[57]
+#[1] 140
+m1 = month.day.year(Time/24,
+                    c(month = 1, day = 1, year = 1800)) 
+m1$year[757]
+#[1] 2011
+m1$month[757]
+#[1] 1  i.e., January
+TokyoT = NcepT[56,29, 757:876] #2011-2020
+M = length(TokyoT)
+t1 = seq(2011, 2020, len = M)
+#Plot Fig. 8.6: Tokyo temperature 2011-2020
+plot(t1, TokyoT, 
+     type = 'l', lwd=1.5,
+     xlab = "Time [mon]", 
+     ylab = 'Temperature [deg C]',
+     main = 'NCEP Monthly Tokyo Temperature: 2011-2020',
+     cex.lab=1.4, cex.axis=1.4)
+#Compute FFT
+TokyoT_FFT = fft(TokyoT-mean(TokyoT))
+
+#R plot Fig. 8.7: Peoriodogram of Tokyo temperature
+#setEPS()
+#postscript("fig0807.eps", height=8, width=8)
+layout(matrix(c(1,2,3,4), 
+              nrow = 2, ncol = 2),
+       heights = c(1, 1, 1, 1),
+       widths  = c(1, 1) # Widths of the 2 columns
+) 
+par(mar=c(4.5, 5, 2, 1))
+kk = 0:59
+plot(kk, Mod(TokyoT_FFT)[1:60]^2,
+     type = 'l', lwd=2,
+     xlab = 'k', ylab = 'Spectral Power',
+     cex.lab = 1.5, cex.axis = 1.5,
+     main = 'Periodogram of Mon. Tokyo Temp')
+text(50,21000, '(a)', cex = 2)
+
+f_mon = kk/M
+plot(f_mon, Mod(TokyoT_FFT)[1:60]^2,
+     type = 'l', lwd=2, 
+     xlab = 'Cycles per month', ylab = 'Spectral Power',
+     cex.lab = 1.5, cex.axis = 1.5,
+     main = 'Periodogram in terms of month')
+text(0.45,21000, '(c)', cex = 2)
+#axis(1, at = c(0.08, 0.17, 0.33, 0.50), cex.axis=1.6)
+
+f_year = 12*kk/M
+plot(f_year, Mod(TokyoT_FFT)[1:60]^2,
+     type = 'l', lwd=2,
+     xlab = 'Cycles per year', ylab = 'Spectral Power',
+     cex.lab = 1.5, cex.axis = 1.5,
+     main = 'Periodogram in terms of year')
+text(5.5,21000, '(b)', cex = 2)
+
+tau = 120/kk[0:60]
+plot(tau, Mod(TokyoT_FFT)[1:60]^2,
+     log = 'x', xaxt="n",
+     type = 'l', lwd=2,
+     xlab = 'Period in month (in log scale)', 
+     ylab = 'Spectral Power',
+     cex.lab = 1.5, cex.axis = 1.5,
+     main = 'Periodogram in terms of period')
+text(90,21000, '(d)', cex = 2)
+axis(1, at = c(3, 6, 12, 24, 48, 96), cex.axis=1.6)
+
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Code to Verify Parseval's Identity
+```{r}
+M = 8
+X = rnorm(M) #Time series data
+DFT_X = fft(X)/sqrt(M) #Compute DFT using FFT
+t(X)%*%X - sum(Mod(DFT_X)^2)
+#[1,] 2.220446e-15 #Approximately zero
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 8.8: Fourier Series over [-1,1]
+```{r}
+i  = complex(real = 0, imaginary = 1)
+T = 2
+t = seq(-T/2,T/2, len = 401)
+#Define the original function x(t)
+xt <- ( t >= -1 & t < 0) * (-4) +
+  ( t <= 1 & t > 0) * (4) 
+#Plot the function x(t)
+#setEPS()
+#postscript("fig0808.eps", height=5, width=8)
+par(mar = c(4, 4.5, 2, 0.5))
+plot(t, xt, type = 'l', 
+     ylim = c(-5,5),
+     xlab='t', ylab='x(t)',
+main = 'Approximate a function by a finite sum of series',
+     cex.lab = 1.5, cex.axis =1.4, cex.main =1.4,
+     lwd = 5, col = 'red')
+
+#Plot the partial sum of Fourier series from -K to K
+J = c(3, 10, 100)
+Fcol = c('brown', 'blue','black')
+for (j in 1:3){
+  k = -J[j]:J[j]
+  RK= colSums(8/(i*pi*(2*k-1))*exp(i*pi*outer(2*k-1, t)))
+  lines(t, Re(RK), type = 'l', 
+        col = Fcol[j])
+}
+legend(-1.05, 5.1, 
+       legend = c('Function x(t)', 'Sum of 7 terms', 
+                  'Sum of 21 terms', 'Sum of 201 terms'),
+       col = c('red', 'brown', 'blue', 'black'), 
+       lty = c(1,1,1,1), lwd = c(5, 1,1,1),
+       cex = 1.3, bty = 'n')
+#dev.off()
+```
+
+
+<p>&nbsp;</p>
+### R Plot Fig. 8.9 for Exercise 8.4
+```{r}
+#setwd('~/climstats')
+#setEPS() #Automatically saves the .eps file
+#postscript("fig0809.eps", height=5, width=7)
+par(mar = c(4.5, 4, 2.5, 0.2))
+#set.seed(101)
+M = 51
+t = seq(0, 10, len = M)
+ys = 10*sin(t)
+yn = rnorm(M, 0, 3)
+yd = ys + yn
+plot(t, yd, type = 'o', lwd = 2,
+     ylim = c(-20, 20), 
+     xlab = 't', ylab = 'y',
+     main = 'Data, signal, and noise for a DST filter',
+     cex.lab = 1.4, cex.axis = 1.4) 
+legend(0, -16, 'Data = Signal + Noise', 
+       lty = 1, bty = 'n', lwd = 2, cex = 1.4)
+lines(t, ys, col = 'blue', lwd = 4)
+legend(0, -10, 'Signal', cex = 1.4,
+       lty = 1, bty = 'n', lwd = 4, col = 'blue')
+lines(t, yn, col = 'brown')
+legend(0, -13, 'Noise', cex = 1.4,
+       lty = 1, bty = 'n', col = 'brown')
+#dev.off()
+```
