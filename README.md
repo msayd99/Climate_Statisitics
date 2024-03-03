@@ -1,4 +1,4 @@
-# Climate Science Codes
+# Climate Statistics Codes
 
 Updated and proofread R-Code for *Statistics and Data Visualizations in Climate Science with R and Python*, a Cambridge University Press book by Samuel S.P. Shen
 
