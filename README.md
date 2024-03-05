@@ -1,4 +1,5 @@
 # Computer Codes for Climate Statistics
+# GitHub Version 1.0, March 2024
 
 Updated and proofread R-Code for *Statistics and Data Visualizations in Climate Science with R and Python*, a Cambridge University Press book by Samuel S.P. Shen
 
